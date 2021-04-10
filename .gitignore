@@ -1,0 +1,11 @@
+*.obj
+*.bak
+*.bkp
+*.dst
+
+backup.bat
+
+lists/**
+
+!lists/example
+!lists/example/**

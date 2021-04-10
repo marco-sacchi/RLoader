@@ -1,0 +1,5 @@
+# example list
+# path		executable		setup			cycles	title
+e:\doom		doom.exe		setup.exe		 30000	Doom
+f:\doom2	doom2.exe		setup.exe		 50000	Doom II
+c:\udoom	doom.exe		setup.exe		     0	Ultimate doom

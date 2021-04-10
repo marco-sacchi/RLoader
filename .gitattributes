@@ -1,0 +1,16 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+.git* text eol=lf
+
+README.md text eol=lf
+
+*.c text
+*.h text
+*.cpp text
+*.hpp text
+
+*.dsk binary
+*.prj binary
+*.exe binary
+*.bmp binary
