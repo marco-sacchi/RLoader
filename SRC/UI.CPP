@@ -15,10 +15,13 @@ const char *thumbnail_dirs[THUMBNAIL_DIRS_COUNT] = {
 	"/in_progs/"
 };
 
-ui::ui(list *list, uint8_t back_color, uint8_t fore_color) {
+ui::ui(list *list, bool_t text_mode, uint8_t back_color,
+	   uint8_t fore_color) {
+	m_text_mode = text_mode;
+
 	memset(&m_panel_rect, 0x00, sizeof(vga::text_rect_t));
 	m_panel_attrs = vga::encode_attrs(back_color, fore_color, 0);
-	m_blank_attrs = vga::encode_attrs(0, back_color, 0);
+	m_blank_attrs = vga::encode_attrs(back_color, back_color, 0);
 
 	m_list = list;
 	m_offset = m_selected_entry = 0;
@@ -58,6 +61,9 @@ void ui::set_panel_rect(vga::text_rect_t *rect) {
 	m_info_rect.left = rect->left + 1;
 	m_info_rect.right = rect->right - 1;
 	m_info_rect.bottom = rect->bottom - 1;
+
+	vga::scroll_page_up(rect->bottom - rect->top + 1,
+						m_panel_attrs & 0xf0, rect);
 }
 
 void ui::filter_list(const char *search) {
@@ -183,8 +189,7 @@ void ui::draw_shortcut(const char *key, const char *text) {
 					  vga::USE_ATTRS_UPDATE_CURSOR);
 	vga::write_char(' ', m_panel_attrs, 1);
 
-	vga::set_cursor_pos(row, left);
-	vga::write_char(0xdb, (m_panel_attrs & 0x0f) | 0x80, key_length);
+	this->xor_chars(row, left, key_length);
 }
 
 void ui::draw_search_box() {
@@ -230,10 +235,11 @@ void ui::draw_list_scroll_bar() {
 }
 
 void ui::draw_list_entry(int line) {
-	int max_length = m_list_rect.right - m_list_rect.left + 1;
-	char buffer[50];
-	strncpy(buffer, m_filtered[m_offset + line]->get_title(),
-			max_length);
+	char buffer[UI_FILTER_STR_SIZE];
+	int max_length = min(UI_FILTER_STR_SIZE - 1,
+						 m_list_rect.right - m_list_rect.left + 1);
+
+	strncpy(buffer, m_filtered[m_offset + line]->get_title(), max_length);
 	buffer[max_length] = NULL;
 
 	vga::set_cursor_pos(m_list_rect.top + line, m_list_rect.left);
@@ -248,20 +254,27 @@ void ui::draw_list_entry(int line) {
 	if (match_count > 0) {
 		int search_len = strlen(m_filtered_string);
 
-		for (int i = 0; i < match_count; ++i) {
-			vga::set_cursor_pos(m_list_rect.top + line,
-								m_list_rect.left + matches[i] - buffer);
-			vga::write_char('_', (m_panel_attrs & 0x0f) | 0x80,
-							search_len);
+		if (m_text_mode == TRUE) {
+			for (int i = 0; i < match_count; ++i)
+				vga::xor_attrs(m_list_rect.top + line,
+							   m_list_rect.left + matches[i] - buffer,
+							   0x08, search_len);
+		} else {
+			for (int i = 0; i < match_count; ++i) {
+				vga::set_cursor_pos(m_list_rect.top + line,
+									m_list_rect.left + matches[i] - buffer);
+				vga::write_char('_', (m_panel_attrs & 0x0f) | 0x80,
+								search_len);
+			}
 		}
 	}
 }
 
 void ui::xor_selected_entry() {
 	int width = m_list_rect.right - m_list_rect.left + 1;
-	vga::set_cursor_pos(m_list_rect.top + m_selected_entry - m_offset,
-						m_list_rect.left);
-	vga::write_char(0xdb, (m_panel_attrs & 0x0f) | 0x80, width);
+
+	this->xor_chars(m_list_rect.top + m_selected_entry - m_offset,
+					m_list_rect.left, width);
 }
 
 int ui::calc_list_offset(int selected_entry) {
@@ -271,7 +284,7 @@ int ui::calc_list_offset(int selected_entry) {
 }
 
 void ui::draw_thumbnail(const list_entry *entry) {
-	if (entry == NULL)
+	if (m_text_mode == TRUE || entry == NULL)
 		return;
 
 	strcpy(m_thumbnail_path, m_list->get_path());
@@ -316,7 +329,7 @@ void ui::draw_thumbnail(const list_entry *entry) {
 }
 
 void ui::loop_thumbnail() {
-	if (m_filtered == NULL)
+	if (m_text_mode == TRUE || m_filtered == NULL)
 		return;
 
 	m_thumbnail_loop = (m_thumbnail_loop + 1) % THUMBNAIL_DIRS_COUNT;
@@ -324,11 +337,15 @@ void ui::loop_thumbnail() {
 }
 
 void ui::draw_thumbnail_message(const char *message) {
+	const vga::state_t *state = vga::get_current_state();
+	if (state->columns <= 40)
+		return;
+
 	vga::text_rect_t rect;
 	rect.top = 0;
 	rect.left = m_panel_rect.right + 1;
-	rect.right = 79;
-	rect.bottom = 29;
+	rect.right = state->columns - 1;
+	rect.bottom = state->rows - 1;
 
 	this->clear_thumbnail_area();
 
@@ -341,11 +358,15 @@ void ui::draw_thumbnail_message(const char *message) {
 }
 
 void ui::clear_thumbnail_area() {
+	const vga::state_t *state = vga::get_current_state();
+	if (state->columns <= 40)
+		return;
+
 	vga::text_rect_t rect;
 	rect.top = 0;
 	rect.left = m_panel_rect.right + 1;
-	rect.right = 79;
-	rect.bottom = 29;
+	rect.right = state->columns - 1;
+	rect.bottom = state->rows - 1;
 
 	vga::set_map_mask_reg(0x0f);
 	vga::scroll_page_up(rect.bottom - rect.top + 1,
@@ -539,7 +560,7 @@ void ui::draw_info_line(int row) {
 	}
 
 	vga::set_cursor_pos(row, left);
-	vga::write_string(rendered, (m_panel_attrs & 0x0f) | 0x80,
+	vga::write_string(rendered, m_panel_attrs,
 					  vga::USE_ATTRS_NO_UPDATE_CURSOR);
 
 	if (is_list == TRUE)
@@ -547,38 +568,53 @@ void ui::draw_info_line(int row) {
 
 	int i;
 	if (is_header == TRUE) {
-		switch (header_level) {
-			case 1:
-				graphics::bold_effect(row, left, rendered_length);
-				graphics::italic_effect(row, left, rendered_length);
-				break;
+		if (m_text_mode == TRUE) {
+			vga::xor_attrs(row, left, 0x88, rendered_length);
+		} else {
+			switch (header_level) {
+				case 1:
+					graphics::bold_effect(row, left, rendered_length);
+					graphics::italic_effect(row, left, rendered_length);
+					break;
 
-			case 2:
-				graphics::bold_effect(row, left, rendered_length);
-				break;
+				case 2:
+					graphics::bold_effect(row, left, rendered_length);
+					break;
 
-			case 3:
-				graphics::bold_effect(row, left, rendered_length);
-				break;
+				case 3:
+					graphics::bold_effect(row, left, rendered_length);
+					break;
 
-			case 4:
-				graphics::italic_effect(row, left, rendered_length);
-				break;
+				case 4:
+					graphics::italic_effect(row, left, rendered_length);
+					break;
+			}
+
+			if (header_level < 3)
+				vga::write_char('_', (m_panel_attrs & 0x0f) | 0x80,
+								rendered_length);
 		}
-
-		if (header_level < 3)
-			vga::write_char('_', (m_panel_attrs & 0x0f) | 0x80,
-							rendered_length);
-
 	} else {
-		for (i = 0; i < bolds_count * 2; i += 2)
-			graphics::bold_effect(row, left + bolds[i],
-								  bolds[i + 1] - bolds[i] + 1);
+		if (m_text_mode == TRUE) {
+			for (i = 0; i < bolds_count * 2; i += 2)
+				vga::xor_attrs(row, left + bolds[i], 0x08,
+							   bolds[i + 1] - bolds[i] + 1);
+		} else {
+			for (i = 0; i < bolds_count * 2; i += 2)
+				graphics::bold_effect(row, left + bolds[i],
+									  bolds[i + 1] - bolds[i] + 1);
+		}
 	}
 
-	for (i = 0; i < italics_count * 2; i += 2)
-		graphics::italic_effect(row, left + italics[i],
-								italics[i + 1] - italics[i] + 1);
+	if (m_text_mode == TRUE) {
+		for (i = 0; i < italics_count * 2; i += 2)
+			vga::xor_attrs(row, left + italics[i], 0x08,
+						   italics[i + 1] - italics[i] + 1);
+	} else {
+		for (i = 0; i < italics_count * 2; i += 2)
+			graphics::italic_effect(row, left + italics[i],
+									italics[i + 1] - italics[i] + 1);
+	}
 
 }
 
@@ -667,4 +703,16 @@ void ui::display_cannot_setup(const list_entry *entry) {
 
 void ui::display_no_setup() {
 	this->draw_thumbnail_message("No configuration program specified.");
+}
+
+void ui::xor_chars(uint8_t row, uint8_t col, uint16_t count) {
+	if (m_text_mode == TRUE) {
+		uint8_t reverse = (m_panel_attrs & 0x0f) ^
+						  ((m_panel_attrs & 0xf0) >> 4);
+		reverse |= reverse << 4;
+		vga::xor_attrs(row, col, reverse, count);
+	} else {
+		vga::set_cursor_pos(row, col);
+		vga::write_char(0xdb, (m_panel_attrs & 0x0f) | 0x80, count);
+	}
 }

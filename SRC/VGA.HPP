@@ -61,6 +61,14 @@
 class vga {
 
 public:
+	/** Video mode types. */
+	enum vmodes_types {
+	  /** Graphics mode. */
+	  ALL_POINTS_ADDRESSABLE = 0,
+	  /** Text mode. */
+	  ALPHANUMERIC = 1
+	};
+
 	/** Mode register read modes. */
 	enum gfx_rmodes {
 		/** Read 1-bit for 8 pixels on plane specified by Read map
@@ -109,6 +117,24 @@ public:
 		XOR_WITH_LATCH = 0x03
 	};
 
+	/** Video state. */
+	typedef struct {
+		/** Mode number. */
+		uint8_t mode;
+		/** Charactes columns. */
+		uint8_t columns;
+		/** Charactes rows. */
+		uint8_t rows;
+		/** Current video page. */
+		uint8_t current_page;
+		/** Mode type (graphics or text). */
+		vmodes_types type;
+		/** Maximum number of colors. */
+		int colors;
+		/** True when N colors is N shades of gray. */
+		bool_t is_grayscale;
+	} state_t;
+
 	/** Text cursor position and size. */
 	typedef struct {
 		/** Position as zero-based row and column. */
@@ -128,11 +154,33 @@ public:
 	/** RGB triplet to set color palette entry. */
 	typedef uint8_t color_t[3];
 
+	/** Initialize VGA library.
+	 *
+	 * NOTE: this function must be called before any other.
+	 */
+	static void init();
+
+	/** Check for monochrome display adapter.
+	 *
+	 * @return True if on monochrome display adapter, false otherwise.
+	 */
+	static bool_t is_monochrome();
+
 	/** Set graphics mode.
 	 *
 	 * @param mode Requested mode.
 	 */
 	static void set_mode(uint8_t mode);
+	/** Read video state.
+	 *
+	 * @param state Valorized with video state.
+	 */
+	static void read_state(state_t *state);
+	/** Get current video state.
+	 *
+	 * @return Current state.
+	 */
+	static const vga::state_t *get_current_state();
 
 	/** Toggle cursor visibility.
 	 *
@@ -196,6 +244,24 @@ public:
 	 * @param count Number of characters to write.
 	 */
 	static void write_char(uint8_t ch, uint8_t attrs, uint16_t count);
+	/** Change attributes preserving characters using video memory access.
+	 *
+	 * @param row Row.
+	 * @param col Start column.
+	 * @param new_attrs New attributes.
+	 * @param count Number of cells for which change attrs.
+	 */
+	static void write_attrs(uint8_t row, uint8_t col, uint8_t new_attrs,
+							uint16_t count);
+	/** XOR attributes preserving characters using video memory access.
+	 *
+	 * @param row Row.
+	 * @param col Start column.
+	 * @param xor_attrs Value XORed with readed attributes.
+	 * @param count Number of cells for which change attrs.
+	 */
+	static void xor_attrs(uint8_t row, uint8_t col, uint8_t xor_attrs,
+						  uint16_t count);
 	/** Write string to screen at current corsor position using BIOS.
 	 *
 	 * @see encode_attrs

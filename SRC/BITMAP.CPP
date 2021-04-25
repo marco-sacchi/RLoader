@@ -4,6 +4,8 @@
 
 #include "bitmap.hpp"
 
+#define NEW_DECODER
+
 bitmap::bitmap() {
 	memset(&m_info, 0, sizeof(bitmap::info_header_t));
 	m_error = BMP_ERR_NONE;
@@ -102,8 +104,112 @@ bool_t bitmap::load(const char *filename, int color_offset) {
 }
 
 void bitmap::encode_planar_4bits(const uint8_t *row, int color_offset) {
+#ifdef NEW_DECODER
+	uint16_t width = (uint16_t)m_info.width;
+	uint8_t *encoded = m_encode_buffer;
+	uint8_t col_offset = (uint8_t)color_offset;
+
+	asm {
+		push ax
+		push bx
+		push cx
+		push dx
+		push si
+		push di
+		push ds
+		push es
+
+		lds si, [row]
+		les di, [encoded]
+
+		cld
+
+		mov dh, col_offset
+		mov dl, dh
+		shl dl, 4
+		or dh, dl
+
+		xor dl, dl					/* plane index */
+	}
+	plane_loop:
+	asm {
+		mov cx, width
+		dec cx
+
+		push si
+	}
+	row_loop:
+	asm {
+		mov bl, 4					/* shift to select pixel, alternate 0-4 */
+		mov bh, 8					/* 8 pixels block counter */
+		xor ax, ax
+
+		push cx
+	}
+	block_loop_load:
+	asm {
+		lodsb
+		add al, dh
+		mov ch, al
+	}
+	block_loop_noload:
+	asm {
+		mov al, ch
+
+		mov cl, bl
+		shr al, cl
+		mov cl, dl
+		shr al, cl
+
+		and al, 1
+		mov cl, bh
+		dec cl
+		shl al, cl
+
+		or ah, al
+
+		xor bl, 4
+		dec bh
+		cmp bh, 0
+		je block_done
+		cmp bl, 0
+		je block_loop_noload
+		jmp block_loop_load
+	}
+	block_done:
+	asm {
+		mov al, ah
+		stosb
+
+		pop cx
+
+		sub cx, 8
+		jnc row_loop
+
+		pop si
+
+		inc dl
+		cmp dl, 4
+		jl plane_loop
+
+		pop es
+		pop ds
+		pop di
+		pop si
+		pop dx
+		pop cx
+		pop bx
+		pop ax
+	}
+
+	memcpy((void *)row, m_encode_buffer, (size_t)m_stride);
+
+#else
+
 	uint8_t *pixel;
 	uint8_t *encoded = m_encode_buffer;
+	uint8_t block_size = (8 * m_info.bpp) >> 3;
+	uint8_t pixel_shift = 4;
 
 	pixel = (uint8_t *)row;
 	for (int32_t x = 0; x < m_stride; ++x)
@@ -114,19 +220,20 @@ void bitmap::encode_planar_4bits(const uint8_t *row, int color_offset) {
 		pixel = (uint8_t *)row;
 		for (int32_t i = 0; i < m_info.width; i += 8) {
 			*encoded = 0;
-			for (uint16_t j = 0; j < 8; ++j)
+			for (uint16_t j = 0; j < 8; ++j, pixel_shift ^= 4)
 				*encoded |=
-				(((pixel[j >> 1]      /* select byte */
-				>> (4 - 4 * (j & 1))  /* select 4-bit pixel */
-				) >> plane) & 1)      /* get pixel bit by plane */
-				<< (7 - j);           /* shift to set correct bit */
+					(((pixel[j >> 1]      /* select byte */
+					>> pixel_shift        /* select 4-bit pixel */
+					) >> plane) & 1)      /* get pixel bit by plane */
+					<< (7 - j);           /* shift to set correct bit */
 
 			++encoded;
-			pixel += (8 * m_info.bpp) >> 3;
+			pixel += block_size;
 		}
 	}
 
 	memcpy((void *)row, m_encode_buffer, (size_t)m_stride);
+#endif
 }
 
 void bitmap::unload() {

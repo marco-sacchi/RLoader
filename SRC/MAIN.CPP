@@ -5,6 +5,7 @@
 #include <io.h>
 #include <dos.h>
 
+#include "math.hpp"
 #include "vga.hpp"
 #include "graphics.hpp"
 #include "bitmap.hpp"
@@ -18,7 +19,7 @@ bool_t tests();
 
 #endif
 
-#define VERSION		0x0060
+#define VERSION		0x0065
 
 /** Batch creation modes. */
 enum batch_mode {
@@ -58,7 +59,7 @@ void write_cwd(const char *full_path, FILE *fp);
  * @param argc Number of arguments.
  * @param argv Array of arguments.
  * @param list_name Valorized with list name to load, readed from
- *        arguments or environment variable CONFIG
+ *        arguments or environment variable RLOADER_LIST
  */
 void parse_args(int argc, const char *argv[], const char **list_name);
 /** Display usage short help. */
@@ -72,6 +73,8 @@ const char *help_hint = "type RLOADER /? for help";
 bool_t dosbox = FALSE;
 /** Flag to track need to display the splash screen, parsed from arguments. */
 bool_t show_splash = TRUE;
+/** Flag to track use of text-mode UI without thumbnails. */
+bool_t text_mode = FALSE;
 /** Configuration object readed from configuration file. */
 config *conf = NULL;
 
@@ -99,7 +102,26 @@ int main(int argc, const char *argv[]) {
 		exit(-1);
 	}
 
-	ui *interface = new ui(test_list, 0, 1);
+	vga::init();
+
+	const vga::color_t *bg_color = conf->get_background_color();
+	const vga::color_t *fg_color = conf->get_foreground_color();
+	uint8_t bg_color_index = 0, fg_color_index = 1;
+
+	const vga::state_t *vga_state;
+	vga_state = vga::get_current_state();
+
+	if (text_mode) {
+		fg_color_index = 7;
+
+		if (vga_state->is_grayscale == TRUE)
+			bg_color_index = 0;
+		else
+			bg_color_index = 1;
+	}
+
+	ui *interface = new ui(test_list, text_mode, bg_color_index,
+						   fg_color_index);
 	if (interface == NULL) {
 		printf("Cannot allocate user interface.\n");
 		delete test_list;
@@ -107,26 +129,33 @@ int main(int argc, const char *argv[]) {
 		exit(-1);
 	}
 
-	vga::set_mode(0x12);
+	if (text_mode == FALSE)
+		vga::set_mode(0x12);
+	else
+		show_splash = FALSE;
+
+	vga_state = vga::get_current_state();
+
 	vga::set_blinking(FALSE);
+	vga::enable_cursor(FALSE);
 
-	const vga::color_t *bg_color = conf->get_background_color();
-	const vga::color_t *fg_color = conf->get_foreground_color();
-
-	if (show_splash) {
-		draw_splash_screen();
-		vga::set_ega_color(0, *bg_color);
-		vga::set_ega_color(1, *bg_color);
-	} else {
-		vga::set_ega_color(0, *bg_color);
-		vga::set_ega_color(1, *fg_color);
+	if (text_mode == FALSE) {
+		if (show_splash) {
+			draw_splash_screen();
+			vga::set_ega_color(bg_color_index, *bg_color);
+			vga::set_ega_color(fg_color_index, *bg_color);
+		} else {
+			vga::set_ega_color(bg_color_index, *bg_color);
+			vga::set_ega_color(fg_color_index, *fg_color);
+		}
 	}
 
 	vga::text_rect_t rect;
 	rect.top = 0;
 	rect.left = 0;
-	rect.right = 39;
-	rect.bottom = 29;
+
+	rect.right = max(39, vga_state->columns >> 1) - 1;
+	rect.bottom = vga_state->rows - 1;
 	interface->set_panel_rect(&rect);
 
 	int ch;
@@ -232,7 +261,7 @@ int main(int argc, const char *argv[]) {
 					*(--search_ptr) = 0x00;
 					interface->filter_list(search);
 				}
-			} else if (ch >= 0x20 && (search_ptr - search) < 27) {
+			} else if (ch >= 0x20 && (search_ptr - search) < UI_FILTER_STR_SIZE - 1) {
 				*search_ptr++ = (char)ch;
 				*search_ptr = 0x00;
 				interface->filter_list(search);
@@ -243,7 +272,12 @@ int main(int argc, const char *argv[]) {
 	delete interface;
 	delete test_list;
 
-	vga::set_mode(0x03);
+	if (text_mode == TRUE) {
+		clrscr();
+		vga::set_blinking(TRUE);
+		vga::enable_cursor(TRUE);
+	} else
+		vga::set_mode(0x03);
 
 	return 0;
 }
@@ -319,6 +353,9 @@ bool_t create_batch(const char *parent, const list_entry *entry, batch_mode mode
 	write_cwd(parent, fp);
 	fputc('\n', fp);
 
+	if (dosbox)
+		fputs("cycles fixed 20000\n", fp);
+
 	fflush(fp);
 	fclose(fp);
 
@@ -359,7 +396,7 @@ void write_cwd(const char *full_path, FILE *fp) {
 }
 
 void parse_args(int argc, const char *argv[], const char **list_name) {
-	*list_name = getenv("CONFIG");
+	*list_name = getenv("RLOADER_LIST");
 
 	if (argc > 1) {
 		for (int i = 1; i < argc; ++i) {
@@ -369,6 +406,8 @@ void parse_args(int argc, const char *argv[], const char **list_name) {
 					exit(0);
 				} else if (strcmp(argv[i], "/dosbox") == 0) {
 					dosbox = TRUE;
+				} else if (strcmp(argv[i], "/textmode") == 0) {
+					text_mode = TRUE;
 				} else if (strcmp(argv[i], "/nosplash") == 0) {
 					show_splash = FALSE;
 				} else {
@@ -398,10 +437,11 @@ void print_usage() {
 		   "Syntax: RLOADER [/?|/h|/dosbox] [list_name]\n\n"
 		   "/?, /h     Display this help.\n"
 		   "/dosbox    Can be specified when this program run on DOSBox.\n"
+		   "/textmode  Use a text-based UI intead of a graphical one.\n"
 		   "/nosplash  Do not show splash screen.\n"
 		   "           it sets correct CPU cycles for launched item.\n"
 		   "list_name  name of list to load, automatically readed also from\n"
-		   "           CONFIG environment variable if set.\n\n"
+		   "           RLOADER_LIST environment variable if set.\n\n"
 		   "NOTE: options are case-sensitive.\n\n",
 		   VERSION >> 8, VERSION & 0xFF);
 }

@@ -4,20 +4,111 @@
 
 #include "vga.hpp"
 
+/** Text-modes video memory pointer. */
+static uint8_t far *text_vmem_bw = (uint8_t far *)0xb0000000L;
+/** Text-modes video memory pointer. */
+static uint8_t far *text_vmem_color = (uint8_t far *)0xb8000000L;
+/** Current text-mode video memory pointer. */
+static uint8_t far *text_vmem = NULL;
+/** Current video state. */
+static vga::state_t curr_state;
+
+void vga::init() {
+	union REGS regs;
+	int86(0x11, &regs, &regs);
+
+	// Check for monochrome or color display adapter.
+	if ((regs.h.al & 0x30) == 0x30)
+		text_vmem = text_vmem_bw;
+	else
+		text_vmem = text_vmem_color;
+
+	vga::read_state(&curr_state);
+}
+
+bool_t vga::is_monochrome() {
+	return (text_vmem == text_vmem_bw) ? TRUE : FALSE;
+}
+
 void vga::set_mode(uint8_t mode) {
 	union REGS regs;
 
 	regs.h.ah = 0x00;
 	regs.h.al = mode;
 	int86(0x10, &regs, &regs);
+
+	vga::read_state(&curr_state);
+}
+
+void vga::read_state(vga::state_t *state) {
+	union REGS regs;
+
+	regs.h.ah = 0x0f;
+	int86(0x10, &regs, &regs);
+
+	state->mode = regs.h.al;
+	state->columns = regs.h.ah;
+	state->current_page = regs.h.bh;
+
+	if (state->mode <= 0x03 || state->mode == 0x07)
+		state->type = vga::ALPHANUMERIC;
+	else
+		state->type = vga::ALL_POINTS_ADDRESSABLE;
+
+	state->rows = *((uint8_t far *)0x00400084L) + 1;
+
+	switch (state->mode) {
+		case 0x04:
+		case 0x05:
+		case 0x0a:
+			state->colors = 4;
+			break;
+
+		case 0x06:
+		case 0x11:
+			state->colors = 2;
+			break;
+
+		case 0x07:
+		case 0x0f:
+			state->colors = 1;
+			break;
+
+		default:
+			state->colors = 16;
+	}
+
+	switch (state->mode) {
+		case 0x00:
+		case 0x02:
+		case 0x05:
+		case 0x07:
+		case 0x0f:
+			state->is_grayscale = TRUE;
+			break;
+
+		default:
+			state->is_grayscale = FALSE;
+	}
+}
+
+const vga::state_t *vga::get_current_state() {
+	return &curr_state;
 }
 
 void vga::enable_cursor(bool_t enabled) {
+	vga::cursor_info_t info;
+	vga::get_cursor(&info);
+
 	union REGS regs;
 
-	regs.h.ah = 0x12;
-	regs.h.bl = 0x34;
-	regs.h.al = enabled;
+	regs.h.ah = 0x01;
+	regs.h.ch = info.start_line;
+	regs.h.cl = info.end_line;
+
+	if (enabled == FALSE)
+		regs.h.ch |= 0x20;
+
 	int86(0x10, &regs, &regs);
 }
 
@@ -25,8 +116,8 @@ void vga::set_cursor_type(uint8_t start, uint8_t end) {
 	union REGS regs;
 
 	regs.h.ah = 0x01;
-	regs.h.ch = start & 0x0f;
-	regs.h.cl = end & 0x0f;
+	regs.h.ch = start & 0x1f;
+	regs.h.cl = end & 0x1f;
 	int86(0x10, &regs, &regs);
 }
 
@@ -36,7 +127,7 @@ void vga::set_cursor_pos(uint8_t row, uint8_t column) {
 	regs.h.ah = 0x02;
 	regs.h.dh = row;
 	regs.h.dl = column;
-	regs.h.bh = 0x00; // page number
+	regs.h.bh = curr_state.current_page;
 	int86(0x10, &regs, &regs);
 }
 
@@ -44,13 +135,13 @@ void vga::get_cursor(vga::cursor_info_t *info) {
 	union REGS regs;
 
 	regs.h.ah = 0x03;
-	regs.h.bh = 0x00; // page number
+	regs.h.bh = curr_state.current_page;
 	int86(0x10, &regs, &regs);
 
 	info->row = regs.h.dh;
 	info->column = regs.h.dl;
-	info->start_line = regs.h.ch;
-	info->end_line = regs.h.cl;
+	info->start_line = regs.h.ch & 0x1f;
+	info->end_line = regs.h.cl & 0x1f;
 }
 
 uint8_t vga::encode_attrs(uint8_t back_color, uint8_t fore_color,
@@ -102,7 +193,7 @@ void vga::write_char(uint8_t ch, uint8_t attrs, uint16_t count) {
 	regs.h.ah = 0x09;
 	regs.h.al = ch;
 	regs.h.bl = attrs;
-	regs.h.bh = 0x00; // page number
+	regs.h.bh = curr_state.current_page;
 	regs.x.cx = count;
 
 	int86(0x10, &regs, &regs);
@@ -114,13 +205,82 @@ void vga::write_string(const char *str, uint8_t attrs, ws_modes mode) {
 	vga::get_cursor(&info);
 
 	regs.r_ax = 0x1300 | mode;
-	regs.r_bx = attrs; // page number in bh
+	regs.r_bx = attrs | ((uint16_t)curr_state.current_page << 8);
 	regs.r_cx = strlen(str);
 	regs.r_dx = ((uint16_t)info.row << 8) + (uint16_t)info.column;
 	regs.r_es = FP_SEG(str);
 	regs.r_bp = FP_OFF(str);
 
 	intr(0x10, &regs);
+}
+
+void vga::write_attrs(uint8_t row, uint8_t col, uint8_t new_attrs,
+					  uint16_t count) {
+	uint16_t start_offset = (uint16_t)row * curr_state.columns * 2 +
+							(uint16_t)col * 2;
+
+	asm {
+		push es
+		push di
+
+		les di, [text_vmem]
+		add di, start_offset
+		inc di
+
+		mov al, new_attrs
+		mov cx, count
+
+		cld
+	}
+	attrs_loop:
+	asm {
+		stosb
+		inc di
+		loop attrs_loop
+
+		pop di
+		pop es
+	}
+}
+
+void vga::xor_attrs(uint8_t row, uint8_t col, uint8_t xor_attrs,
+					uint16_t count) {
+	uint16_t start_offset = (uint16_t)row * curr_state.columns * 2 +
+							(uint16_t)col * 2;
+	asm {
+		push es
+		push di
+		push ds
+		push si
+
+		les di, [text_vmem]
+		add di, start_offset
+		inc di
+
+		lds si, [text_vmem]
+		add si, start_offset
+		inc si
+
+		mov ah, xor_attrs
+		mov cx, count
+
+		cld
+	}
+	attrs_loop:
+	asm {
+		lodsb
+		xor al, ah
+		stosb
+
+		inc di
+		inc si
+		loop attrs_loop
+
+		pop si
+		pop ds
+		pop di
+		pop es
+	}
 }
 
 void vga::set_blinking(bool_t blink) {

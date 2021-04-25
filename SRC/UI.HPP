@@ -5,7 +5,7 @@
 #include "vga.hpp"
 
 #define UI_THUMBNAIL_PATH_SIZE	80
-#define UI_FILTER_STR_SIZE		30
+#define UI_FILTER_STR_SIZE		80
 
 /** User interface handling object. */
 class ui {
@@ -14,13 +14,14 @@ public:
 	/** Initialize user interface.
 	 *
 	 * @param list List to be displayed.
+	 * @param text_mode True for text-base UI, false for graphical UI.
 	 * @param back_color Background color used to render UI elements.
 	 * @param fore_color Foreground color used to render UI elements.
 	 */
-	ui(list *list, uint8_t back_color, uint8_t fore_color);
+	ui(list *list, bool_t text_mode, uint8_t back_color, uint8_t fore_color);
 	~ui();
 
-	/** Set the rectangle that defines the UI area.
+	/** Set and clear the rectangle that defines the UI area.
 	 *
 	 * @param rect Rectangle of UI area.
 	 */
@@ -158,6 +159,17 @@ private:
 	void draw_thumbnail_message(const char *message);
 	/** Clear thumbnail area with UI background color. */
 	void clear_thumbnail_area();
+
+	/** XOR charaters in video memory (graphics or text mode).
+	 *
+	 * @param row Zero-based row character coordinate.
+	 * @param col Zero-based column character coordinate.
+	 * @param count Number of characters to XOR.
+	 */
+	void xor_chars(uint8_t row, uint8_t col, uint16_t count);
+
+	/** When true Text-based UI will be used, graphical one otherwise. */
+	bool_t m_text_mode;
 
 	/** UI panel recteangle. */
 	vga::text_rect_t m_panel_rect;
