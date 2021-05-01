@@ -29,6 +29,8 @@ enum batch_mode {
 	BATCH_SETUP = 2
 };
 
+/**  Draw logo on right side of the screen when in 80 columns text mode. */
+void draw_logo();
 /** Draw and fade in/out the splash screen. */
 void draw_splash_screen();
 /** Create batch file to launch program or its setup executable.
@@ -67,8 +69,11 @@ void print_usage();
 
 const char *config_file = "res/rloader.cfg";
 const char *splash_file = "res/splash.bmp";
+const char *ansi80_splash_file = "res/splash80.bin";
+const char *ansi40_splash_file = "res/splash40.bin";
 const char *temp_batch = "rloadrun.bat";
 const char *help_hint = "type RLOADER /? for help";
+
 /** Flag to track execution inside DOSBox or not, parsed form arguments. */
 bool_t dosbox = FALSE;
 /** Flag to track need to display the splash screen, parsed from arguments. */
@@ -131,30 +136,27 @@ int main(int argc, const char *argv[]) {
 
 	if (text_mode == FALSE)
 		vga::set_mode(0x12);
-	else
-		show_splash = FALSE;
 
 	vga_state = vga::get_current_state();
 
 	vga::set_blinking(FALSE);
 	vga::enable_cursor(FALSE);
 
+	if (show_splash)
+		draw_splash_screen();
+
 	if (text_mode == FALSE) {
-		if (show_splash) {
-			draw_splash_screen();
-			vga::set_ega_color(bg_color_index, *bg_color);
-			vga::set_ega_color(fg_color_index, *bg_color);
-		} else {
-			vga::set_ega_color(bg_color_index, *bg_color);
-			vga::set_ega_color(fg_color_index, *fg_color);
-		}
+		vga::set_ega_color(bg_color_index, *bg_color);
+		vga::set_ega_color(fg_color_index, *bg_color);
+	} else {
+		if (vga_state->columns == 80)
+			draw_logo();
 	}
 
 	vga::text_rect_t rect;
 	rect.top = 0;
 	rect.left = 0;
-
-	rect.right = max(39, vga_state->columns >> 1) - 1;
+	rect.right = max(40, vga_state->columns >> 1) - 1;
 	rect.bottom = vga_state->rows - 1;
 	interface->set_panel_rect(&rect);
 
@@ -167,7 +169,7 @@ int main(int argc, const char *argv[]) {
 	interface->draw_panel();
 	interface->filter_list(search);
 
-	if (show_splash) {
+	if (text_mode == FALSE && show_splash == TRUE) {
 		vga::color_t lerp;
 
 		for (float t = 0.0f; t <= 1.0f; t += 0.1f) {
@@ -282,24 +284,66 @@ int main(int argc, const char *argv[]) {
 	return 0;
 }
 
-void draw_splash_screen() {
-	if (access(splash_file, 0) != 0)
-		return;
-
-	bitmap *bmp = new bitmap();
-	if (bmp == NULL || bmp->load(splash_file) == FALSE) {
-		if (bmp != NULL)
-			delete bmp;
+void draw_logo() {
+	ansi_picture *pic = new ansi_picture();
+	if (pic == NULL || pic->load(ansi40_splash_file, 40) == FALSE) {
+		if (pic != NULL)
+			delete pic;
 
 		return;
 	}
 
-	graphics::set_ega_palette(bmp);
-	graphics::draw(bmp, (640 >> 1) - (bmp->get_width() >> 1),
-				   (480 >> 1) - (bmp->get_height() >> 1));
+	graphics::draw(pic, 0, 40);
+	delete pic;
+}
 
-	vga::color_t black = {0, 0, 0};
-	graphics::ega_fade_in(bmp, black, 500);
+void draw_splash_screen() {
+	bitmap *bmp;
+	ansi_picture *pic;
+
+	if (text_mode == FALSE) {
+		if (access(splash_file, 0) != 0)
+			return;
+
+		bmp = new bitmap();
+		if (bmp == NULL || bmp->load(splash_file) == FALSE) {
+			if (bmp != NULL)
+				delete bmp;
+
+			return;
+		}
+
+		graphics::set_ega_palette(bmp);
+		graphics::draw(bmp, (640 >> 1) - (bmp->get_width() >> 1),
+					   (480 >> 1) - (bmp->get_height() >> 1));
+
+		vga::color_t black = {0, 0, 0};
+		graphics::ega_fade_in(bmp, black, 500);
+	} else {
+		const char *ansi_file = ansi80_splash_file;
+		const vga::state_t *vga_state;
+
+		vga_state = vga::get_current_state();
+
+		if (vga_state->columns < 80)
+			ansi_file = ansi40_splash_file;
+
+		if (access(ansi_file, 0) != 0)
+			return;
+
+		pic = new ansi_picture();
+		if (pic == NULL || pic->load(ansi_file, vga_state->columns) == FALSE) {
+			if (pic != NULL)
+				delete pic;
+
+			return;
+		}
+
+		clrscr();
+		graphics::draw(pic,
+					   (vga_state->rows - pic->get_height()) >> 1,
+					   (vga_state->columns - pic->get_width()) >> 1);
+	}
 
 	for (int i = 0; i < 20; ++i) {
 		if (kbhit() != 0) {
@@ -310,10 +354,13 @@ void draw_splash_screen() {
 		delay(100);
 	}
 
-	const vga::color_t *color = conf->get_background_color();
-	graphics::ega_fade_out(bmp, *color, 500);
+	if (text_mode == FALSE) {
+		const vga::color_t *color = conf->get_background_color();
+		graphics::ega_fade_out(bmp, *color, 500);
 
-	delete bmp;
+		delete bmp;
+	} else
+		delete pic;
 }
 
 bool_t create_batch(const char *parent, const list_entry *entry, batch_mode mode) {

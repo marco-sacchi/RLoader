@@ -3,13 +3,14 @@
 DOS programs launcher with customizable lists, search and thumbnails
 display.
 
-Developed entirely in Borland C ++ 3.0 as a simple list viewer to launch DOS
+Developed entirely in Borland C++ 3.0 as a simple list viewer to launch DOS
 programs, it has been extended by integrating:
 - text search,
 - definition of multiple program lists,
 - display of thumbnails of the program title and in-program graphics,
 - simplified display of markdown files as help and information on the
-  elements of the active list.
+  elements of the active list
+- a fully functional text-mode interface for low-end machines
 
 The interface designed for the arrow keys and only 5 other function keys
 makes it perfect to use in DOSBox even when user input is handled via a
@@ -18,6 +19,8 @@ gamepad (and proper key mapping).
 ![SCREEN01](RES/SCREEN01.PNG?raw=true "SCREEN01")
 ![SCREEN02](RES/SCREEN02.PNG?raw=true "SCREEN02")
 ![SCREEN03](RES/SCREEN03.PNG?raw=true "SCREEN03")
+![SCREEN04](RES/SCREEN04.PNG?raw=true "SCREEN04")
+![SCREEN05](RES/SCREEN05.PNG?raw=true "SCREEN05")
 
 # Installation
 
@@ -37,7 +40,11 @@ without the need to modify the absolute paths.
 
 # Hardware requirements (for a real machine)
 
-An 80386 33 MHz with VGA-compatible graphics card.
+RLoader was compiled using the 8086 instruction set and implements two user
+interfaces: one graphical and one in text mode.
+
+The former requires a compatible VGA graphics card while the latter makes it
+usable even on low-end machines with a compatible CGA graphics card.
 
 # Execution
 
@@ -54,6 +61,12 @@ if you are on DOSBox, type:
 
 ```
 RLOADER /dosbox example
+```
+
+If you want to use the text-mode interface, type:
+
+```
+RLOADER /textmode example
 ```
 
 # List and info navigation

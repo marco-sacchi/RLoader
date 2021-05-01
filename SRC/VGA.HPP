@@ -133,6 +133,8 @@ public:
 		int colors;
 		/** True when N colors is N shades of gray. */
 		bool_t is_grayscale;
+		/** Pointer to video memory accounting for text/graphics mode. */
+		uint8_t far *vmem;
 	} state_t;
 
 	/** Text cursor position and size. */
@@ -181,6 +183,12 @@ public:
 	 * @return Current state.
 	 */
 	static const vga::state_t *get_current_state();
+
+	/** Get pointer to video memory accounting for text/graphics mode.
+	 *
+	 * @return Pointer to video memeory start address.
+	 */
+	static const uint8_t far *vga::get_vmem_pointer();
 
 	/** Toggle cursor visibility.
 	 *
@@ -262,7 +270,8 @@ public:
 	 */
 	static void xor_attrs(uint8_t row, uint8_t col, uint8_t xor_attrs,
 						  uint16_t count);
-	/** Write string to screen at current corsor position using BIOS.
+	/** Write null-terminated string to screen at current corsor
+	 *  position using BIOS.
 	 *
 	 * @see encode_attrs
 	 * @see ws_modes
@@ -271,6 +280,18 @@ public:
 	 * @param mode Writing mode.
 	 */
 	static void write_string(const char *str, uint8_t attrs, ws_modes mode);
+
+	/** Write string to screen at current corsor position using BIOS.
+	 *
+	 * @see encode_attrs
+	 * @see ws_modes
+	 * @param str String to write.
+	 * @param length Number of characters to write.
+	 * @param attrs Attributes to use for all characters.
+	 * @param mode Writing mode.
+	 */
+	static void write_string(const char *str, uint16_t length, uint8_t attrs,
+							 ws_modes mode);
 
 	/** Toggle text blink using bit 3 of background color.
 	 *

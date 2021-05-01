@@ -132,7 +132,9 @@ void graphics::draw(bitmap *bmp, uint16_t x, uint16_t y) {
 
 		mov bx, height
 		mov cx, width
-		shr cx, 3
+		shr cx, 1
+		shr cx, 1
+		shr cx, 1
 
 		les di, [vmem]
 		lds si, [image]
@@ -176,6 +178,37 @@ void graphics::draw(bitmap *bmp, uint16_t x, uint16_t y) {
 		pop ds
 
 		sti
+	}
+}
+
+void graphics::draw(ansi_picture *pic, uint8_t row, uint8_t column) {
+	const int8_t *data = (int8_t *)pic->get_data();
+    const vga::state_t *vga_state = vga::get_current_state();
+	uint16_t stride = pic->get_stride();
+	uint16_t width = pic->get_width(), height = pic->get_height();
+
+	// Check if picture bottom-right character will be drawn on
+	// bottom-right screen character position and trigger scroll.
+	bool_t scroll = (row + height) == vga_state->rows &&
+					(column + width) == vga_state->columns;
+
+	if (scroll)
+		--height;
+
+	for (uint16_t j = 0; j < height; ++j, data += stride) {
+		vga::set_cursor_pos(row + j, column);
+		vga::write_string(data, width, 0,
+						  vga::USE_STR_NO_UPDATE_CURSOR);
+	}
+
+	// To avoid scroll draw all rows but the last that will be rendered
+	// exluding the last charater and drawing it using write_char that
+	// do not trigger scrolling.
+	if (scroll) {
+		vga::set_cursor_pos(row + height, column);
+		vga::write_string(data, width - 1, 0,
+						  vga::USE_STR_UPDATE_CURSOR);
+		vga::write_char(*(data + stride - 2), *(data + stride - 1), 1);
 	}
 }
 
@@ -318,7 +351,8 @@ void graphics::italic_effect(uint8_t row, uint8_t column, uint8_t chars) {
 		push cx
 		mov ch, chars
 		mov cl, bh
-		shr cl, 2
+		shr cl, 1
+		shr cl, 1
 		xor ax, ax
 	}
 	italic_line_loop:

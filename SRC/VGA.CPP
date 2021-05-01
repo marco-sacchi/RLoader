@@ -4,10 +4,12 @@
 
 #include "vga.hpp"
 
-/** Text-modes video memory pointer. */
+/** Monochrome text-modes video memory pointer. */
 static uint8_t far *text_vmem_bw = (uint8_t far *)0xb0000000L;
-/** Text-modes video memory pointer. */
+/** Color text-modes video memory pointer. */
 static uint8_t far *text_vmem_color = (uint8_t far *)0xb8000000L;
+/** Graphics-modes video memory pointer. */
+static uint8_t far *gfx_vmem = (uint8_t far *)0xa0000000L;
 /** Current text-mode video memory pointer. */
 static uint8_t far *text_vmem = NULL;
 /** Current video state. */
@@ -50,10 +52,13 @@ void vga::read_state(vga::state_t *state) {
 	state->columns = regs.h.ah;
 	state->current_page = regs.h.bh;
 
-	if (state->mode <= 0x03 || state->mode == 0x07)
+	if (state->mode <= 0x03 || state->mode == 0x07) {
 		state->type = vga::ALPHANUMERIC;
-	else
+		state->vmem = text_vmem;
+	} else {
 		state->type = vga::ALL_POINTS_ADDRESSABLE;
+		state->vmem = gfx_vmem;
+	}
 
 	state->rows = *((uint8_t far *)0x00400084L) + 1;
 
@@ -94,6 +99,10 @@ void vga::read_state(vga::state_t *state) {
 
 const vga::state_t *vga::get_current_state() {
 	return &curr_state;
+}
+
+const uint8_t far *vga::get_vmem_pointer() {
+	return curr_state.vmem;
 }
 
 void vga::enable_cursor(bool_t enabled) {
@@ -200,13 +209,18 @@ void vga::write_char(uint8_t ch, uint8_t attrs, uint16_t count) {
 }
 
 void vga::write_string(const char *str, uint8_t attrs, ws_modes mode) {
+	vga::write_string(str, strlen(str), attrs, mode);
+}
+
+void vga::write_string(const char *str, uint16_t length, uint8_t attrs,
+					   ws_modes mode) {
 	struct REGPACK regs;
 	vga::cursor_info_t info;
 	vga::get_cursor(&info);
 
 	regs.r_ax = 0x1300 | mode;
 	regs.r_bx = attrs | ((uint16_t)curr_state.current_page << 8);
-	regs.r_cx = strlen(str);
+	regs.r_cx = length;
 	regs.r_dx = ((uint16_t)info.row << 8) + (uint16_t)info.column;
 	regs.r_es = FP_SEG(str);
 	regs.r_bp = FP_OFF(str);

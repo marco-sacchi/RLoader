@@ -3,6 +3,7 @@
 
 #include "types.hpp"
 #include "vga.hpp"
+#include "ansipic.hpp"
 #include "bitmap.hpp"
 
 /** Graphics utility methods. */
@@ -62,6 +63,14 @@ public:
 	 * @param y Vertical position of top-left image corner.
 	 */
 	static void draw(bitmap *bmp, uint16_t x, uint16_t y);
+
+	/** Draw ANSI/ASCII picture on specified position.
+	 *
+	 * @param pic Picture to draw to the video memory.
+	 * @param row Zero-based character row of top-left picture corner.
+	 * @param column Zero-based character column of top-left picture corner.
+	 */
+	static void draw(ansi_picture *pic, uint8_t row, uint8_t column);
 
 	/** Draw frame using text BIOS services.
 	 *

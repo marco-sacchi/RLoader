@@ -126,7 +126,8 @@ void bitmap::encode_planar_4bits(const uint8_t *row, int color_offset) {
 
 		mov dh, col_offset
 		mov dl, dh
-		shl dl, 4
+		mov cl, 4
+		shl dl, cl
 		or dh, dl
 
 		xor dl, dl					/* plane index */
