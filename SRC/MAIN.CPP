@@ -20,7 +20,7 @@ bool_t tests();
 
 #endif
 
-#define VERSION		0x0075
+#define VERSION		"1.0.0"
 
 /** Batch creation modes. */
 enum batch_mode {
@@ -496,7 +496,7 @@ void parse_args(int argc, const char *argv[], const char **list_name) {
 }
 
 void print_usage() {
-	printf("RLOADER Version %x.%02x\n2021 Marco Sacchi\n\n"
+	printf("RLOADER Version " VERSION "\n2021 Marco Sacchi\n\n"
 		   "Syntax: RLOADER [/?|/h|/dosbox] [list_name]\n\n"
 		   "/?, /h     Display this help.\n"
 		   "/dosbox    Can be specified when this program run on DOSBox.\n"
@@ -505,8 +505,7 @@ void print_usage() {
 		   "           it sets correct CPU cycles for launched item.\n"
 		   "list_name  name of list to load, automatically readed also from\n"
 		   "           RLOADER_LIST environment variable if set.\n\n"
-		   "NOTE: options are case-sensitive.\n\n",
-		   VERSION >> 8, VERSION & 0xFF);
+		   "NOTE: options are case-sensitive.\n\n");
 }
 
 #ifdef TESTS
