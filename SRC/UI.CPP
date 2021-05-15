@@ -7,6 +7,7 @@
 #include "math.hpp"
 #include "graphics.hpp"
 #include "string.hpp"
+#include "encoder.hpp"
 
 #define THUMBNAIL_DIRS_COUNT 2
 
@@ -38,6 +39,8 @@ ui::ui(list *list, bool_t text_mode, uint8_t back_color,
 	memset(&m_info_rect, 0x00, sizeof(vga::text_rect_t));
 
 	memset(m_thumbnail_path, 0x00, UI_THUMBNAIL_PATH_SIZE);
+
+	m_encoder = NULL;
 }
 
 ui::~ui() {
@@ -287,6 +290,12 @@ void ui::draw_thumbnail(const list_entry *entry) {
 	if (m_text_mode == TRUE || entry == NULL)
 		return;
 
+	if (m_encoder) {
+		delete m_encoder->get_bitmap();
+		delete m_encoder;
+		m_encoder = NULL;
+	}
+
 	strcpy(m_thumbnail_path, m_list->get_path());
 	strcat(m_thumbnail_path, thumbnail_dirs[m_thumbnail_loop]);
 	strcat(m_thumbnail_path, entry->get_folder());
@@ -298,7 +307,7 @@ void ui::draw_thumbnail(const list_entry *entry) {
 	}
 
 	bitmap *bmp = new bitmap();
-	if (bmp == NULL || bmp->load(m_thumbnail_path, 2) == FALSE) {
+	if (bmp == NULL || bmp->load(m_thumbnail_path) == FALSE) {
 		if (bmp != NULL) {
 			switch (bmp->get_last_error()) {
 				case BMP_ERR_NOTFOUND:
@@ -322,10 +331,25 @@ void ui::draw_thumbnail(const list_entry *entry) {
 		return;
 	}
 
+	m_encoder = new bitmap_encoder(bmp, 2);
+	if (m_encoder == NULL) {
+		delete bmp;
+		this->draw_thumbnail_message("Cannot allocate thumbnail.");
+	}
+}
+
+void ui::task() {
+	if (m_encoder == NULL || m_encoder->task() == FALSE)
+		return;
+
 	this->clear_thumbnail_area();
+	bitmap *bmp = m_encoder->get_bitmap();
 	graphics::set_ega_palette(bmp, 2);
 	graphics::draw(bmp, 320, (480 >> 1) - (bmp->get_height() >> 1));
 	delete bmp;
+
+	delete m_encoder;
+	m_encoder = NULL;
 }
 
 void ui::loop_thumbnail() {

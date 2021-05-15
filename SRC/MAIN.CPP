@@ -9,6 +9,7 @@
 #include "vga.hpp"
 #include "graphics.hpp"
 #include "bitmap.hpp"
+#include "encoder.hpp"
 #include "config.hpp"
 #include "list.hpp"
 #include "ui.hpp"
@@ -19,7 +20,7 @@ bool_t tests();
 
 #endif
 
-#define VERSION		0x0065
+#define VERSION		0x0075
 
 /** Batch creation modes. */
 enum batch_mode {
@@ -181,6 +182,11 @@ int main(int argc, const char *argv[]) {
 	}
 
 	while (exit == FALSE) {
+		if (!kbhit()) {
+			interface->task();
+			continue;
+		}
+
 		ch = getch();
 		if (ch == 0x1b && interface->is_info_displayed() == TRUE) {
 			interface->hide_info();
@@ -300,6 +306,7 @@ void draw_logo() {
 void draw_splash_screen() {
 	bitmap *bmp;
 	ansi_picture *pic;
+	bitmap_encoder *encoder;
 
 	if (text_mode == FALSE) {
 		if (access(splash_file, 0) != 0)
@@ -312,6 +319,15 @@ void draw_splash_screen() {
 
 			return;
 		}
+
+		encoder = new bitmap_encoder(bmp);
+		if (encoder == NULL) {
+			delete bmp;
+			return;
+		}
+
+		while (encoder->task() != TRUE);
+		delete encoder;
 
 		graphics::set_ega_palette(bmp);
 		graphics::draw(bmp, (640 >> 1) - (bmp->get_width() >> 1),

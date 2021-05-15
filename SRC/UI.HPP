@@ -3,6 +3,7 @@
 
 #include "list.hpp"
 #include "vga.hpp"
+#include "encoder.hpp"
 
 #define UI_THUMBNAIL_PATH_SIZE	80
 #define UI_FILTER_STR_SIZE		80
@@ -20,6 +21,9 @@ public:
 	 */
 	ui(list *list, bool_t text_mode, uint8_t back_color, uint8_t fore_color);
 	~ui();
+
+	/** Run background tasks. */
+	void task();
 
 	/** Set and clear the rectangle that defines the UI area.
 	 *
@@ -151,6 +155,7 @@ private:
 	 * @param entry Entry for which draw thumbnail.
 	 */
 	void draw_thumbnail(const list_entry *entry);
+
 	/** Display message in thumbnail area clearing it.
 	 *
 	 * @note Message length cannot exceed thumbnail area width.
@@ -211,6 +216,9 @@ private:
 	char m_thumbnail_path[UI_THUMBNAIL_PATH_SIZE];
 	/** Thumbnail loop index. */
 	int m_thumbnail_loop;
+
+	/** Encode bitmap for planar VGA modes. */
+	bitmap_encoder *m_encoder;
 };
 
 #endif

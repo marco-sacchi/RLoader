@@ -70,6 +70,7 @@ private:
 
 	/** Last error value, see BMP_ERR_* defines. */
 	int m_error;
+	/** Bitmap info header. */
 	info_header_t m_info;
 	/** Image data stride in *bytes*. */
 	int32_t m_stride;
@@ -77,16 +78,8 @@ private:
 	uint32_t *m_palette;
 	/** Pointer to image. */
 	void *m_image;
-	/** Buffer to prepare bitmap to be displayed int 4-bits planar mode. */
-	uint8_t m_encode_buffer[512];
 	/** Unload bitmap resources. */
 	void unload();
-	/** Encode readed bitmap row to be displayed on a planar 4-bits mode.
-	 *
-	 * @param row Pointer to raw data image row.
-	 * @param color_offset Offset applied to readed color index.
-	 */
-	void encode_planar_4bits(const uint8_t *row, int color_offset);
 
 public:
 	bitmap();
@@ -129,10 +122,9 @@ public:
 	/** Load bitmap in memory.
 	 *
 	 * @param filename Fully-qualified path of bitmap file with extension.
-	 * @param color_offset Offset applied to indexed colors bitmaps.
 	 * @return TRUE on success, FALSE otherwise.
 	 */
-	bool_t load(const char *filename, int color_offset = 0);
+	bool_t load(const char *filename);
 };
 
 #pragma pack(pop);
