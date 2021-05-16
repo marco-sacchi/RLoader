@@ -5,6 +5,8 @@
 *.dst
 
 backup.bat
+package.bat
+rloader.zip
 
 lists/**
 

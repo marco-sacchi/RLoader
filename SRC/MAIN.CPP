@@ -170,7 +170,7 @@ int main(int argc, const char *argv[]) {
 	interface->draw_panel();
 	interface->filter_list(search);
 
-	if (text_mode == FALSE && show_splash == TRUE) {
+	if (text_mode == FALSE) {
 		vga::color_t lerp;
 
 		for (float t = 0.0f; t <= 1.0f; t += 0.1f) {
