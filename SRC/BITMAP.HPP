@@ -9,6 +9,7 @@
 #define BMP_ERR_NOTFOUND		-1	/* File not found. */
 #define BMP_ERR_INVALID     	-2	/* Invalid/corrupted bitmap file. */
 #define BMP_ERR_NOMEM			-3	/* Not enough memory to allocate bitmap. */
+#define BMP_ERR_INVALID_FORMAT	-4	/* Non 4-bit/pixel uncompressed bitmap.*/
 
 #define BMP_CMP_NONE			0	/* None */
 #define BMP_CMP_RLE8			1	/* RLE 8-bit/pixel, used only with 8-bit/pixel bitmaps */
@@ -21,7 +22,7 @@
 #define BMP_CMP_CMYKRLE8		12	/* RLE-8, only Windows Metafile CMYK */
 #define BMP_CMP_CMYKRLE4		13	/* RLE-4, only Windows Metafile CMYK */
 
-#pragma pack(push, 0);
+#pragma pack(push, 1);
 
 /** Object to load uncompressed bitmap files.
  *

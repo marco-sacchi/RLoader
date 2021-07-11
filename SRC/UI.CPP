@@ -322,6 +322,10 @@ void ui::draw_thumbnail(const list_entry *entry) {
 					this->draw_thumbnail_message("Cannot allocate thumbnail.");
 					break;
 
+				case BMP_ERR_INVALID_FORMAT:
+					this->draw_thumbnail_message("Not an uncompressed 4-bpp bitmap.");
+					break;
+
 				default:
 					this->draw_thumbnail_message("Thumbnail corrupted.");
 

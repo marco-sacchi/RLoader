@@ -62,6 +62,12 @@ bool_t bitmap::load(const char *filename) {
 	fread(&(m_info.size), 4, 1, fp);
 	fread(((uint8_t *)&m_info + 4), (size_t)m_info.size - 4, 1, fp);
 
+	if (m_info.bpp != 4 || m_info.compression != 0) {
+		fclose(fp);
+		m_error = BMP_ERR_INVALID_FORMAT;
+		return FALSE;
+	}
+
 	if (m_info.colors > 0) {
 		m_palette = (uint32_t *)malloc((size_t)m_info.colors * 4);
 		if (m_palette == NULL) {
