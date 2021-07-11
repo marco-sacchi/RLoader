@@ -31,6 +31,10 @@ int main(int argc, char *argv[]) {
 		// Lauch user interface.
 		if (spawnv(P_WAIT, (char *)ui, args) == -1) {
 			free(args);
+
+			// Delete temporary files that may be left on disk.
+			if (access(temp_batch, 0) == 0)
+				unlink(temp_batch);
 			printf(err_format, ui);
 			exit(-1);
 		}
@@ -50,9 +54,6 @@ int main(int argc, char *argv[]) {
 			printf(err_format, temp_batch);
 			exit(-1);
 		}
-
-		// Delete batch.
-		unlink(temp_batch);
 
 		first_run = FALSE;
 	}

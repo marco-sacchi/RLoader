@@ -54,6 +54,12 @@ public:
 	 * @return Pointer to selected entry, NULL if no entry is selected.
 	 */
 	const list_entry *get_selected_entry();
+	/** Set seleted list entry.
+	 *
+	 * @param entry Entry to select, if not in list first entry
+	 *              will be selected.
+	 */
+	void set_selected_entry(list_entry *entry);
 	/** Loop between titile and in-program thumbnails. */
 	void loop_thumbnail();
 

@@ -93,6 +93,7 @@ bool_t list::read_entries(FILE *fp) {
 			free(line_buffer);
 			return FALSE;
 		}
+		m_entries[count].set_index(count);
 
 		++count;
 	}

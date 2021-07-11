@@ -9,6 +9,17 @@ public:
 	list_entry();
 	~list_entry();
 
+	/** Get entry index.
+	 *
+	 * @return Zero-based entry index into the list.
+	 */
+	uint16_t get_index() const { return m_index; }
+	/** Set entry index.
+	 *
+	 * @param index Zero-based entry index into the list.
+	 */
+	void set_index(uint16_t index) { m_index = index; }
+
 	/** Parse entry from list file.
 	 *
 	 * @param line Line of list file.
@@ -69,6 +80,8 @@ private:
 	 */
 	int parse_cycles(const char *source, uint16_t *dest);
 
+	/** Zero-based entry index into the list. */
+	uint16_t m_index;
 	/** Entry path, executable and setup program. */
 	char *m_path, *m_executable, *m_setup;
 	/** Number of cycles to set when run entry on DOSBox. */

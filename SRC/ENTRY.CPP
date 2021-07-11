@@ -129,20 +129,13 @@ int list_entry::parse_cycles(const char *source, uint16_t *dest) {
 	}
 
 	int digit_count = 0;
-	uint16_t digits[5];
+	*dest = 0;
 	while (!string::is_white_space(*src_ptr)) {
 		if (digit_count > 4 || *src_ptr == NULL ||
 			*src_ptr < '0' || *src_ptr > '9')
 			return -1;
 
-		digits[digit_count++] = *src_ptr++ - '0';
-	}
-
-	*dest = NULL;
-	uint16_t multiplier = 1;
-	for (int i = digit_count - 1; i >= 0; --i) {
-		*dest += digits[i] * multiplier;
-		multiplier *= 10;
+		*dest = (*dest * 10) + (*src_ptr++ - '0');
 	}
 
 	return (int)(src_ptr - source);

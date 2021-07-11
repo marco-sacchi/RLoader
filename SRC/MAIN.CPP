@@ -13,6 +13,7 @@
 #include "config.hpp"
 #include "list.hpp"
 #include "ui.hpp"
+#include "string.hpp"
 
 #ifdef TESTS
 
@@ -34,6 +35,16 @@ enum batch_mode {
 void draw_logo();
 /** Draw and fade in/out the splash screen. */
 void draw_splash_screen();
+/** Get entry index of last run/configured entry. */
+int get_previous_entry_index();
+/** Get current DOSBox cycles setting. */
+int get_current_cycles();
+/** Parse string representation of integer.
+ *
+ * @param ptr Pointer to first digit in string literal.
+ * @return Parsed integer, -1 on invalid string literal.
+ */
+int parse_int(char *ptr);
 /** Create batch file to launch program or its setup executable.
  *
  * @param parent This program.
@@ -81,12 +92,18 @@ bool_t dosbox = FALSE;
 bool_t show_splash = TRUE;
 /** Flag to track use of text-mode UI without thumbnails. */
 bool_t text_mode = FALSE;
+/** Flag to pause the dynamically created batch file before re-run RLoader. */
+bool_t batch_pause = FALSE;
 /** Configuration object readed from configuration file. */
 config *conf = NULL;
 
 int main(int argc, const char *argv[]) {
-	if (access(temp_batch, 0) == 0)
+	int prev_entry_index = 0;
+
+	if (access(temp_batch, 0) == 0) {
+		prev_entry_index = max(0, get_previous_entry_index());
 		unlink(temp_batch);
+	}
 
 	char *list_name;
 	parse_args(argc, argv, &list_name);
@@ -99,11 +116,11 @@ int main(int argc, const char *argv[]) {
 		exit(-1);
 	}
 
-	list *test_list = new list();
-	if (test_list == NULL || test_list->load(list_name) == FALSE) {
+	list *curr_list = new list();
+	if (curr_list == NULL || curr_list->load(list_name) == FALSE) {
 		printf("Cannot allocate or parse list '%s'.\n", list_name);
-		if (test_list != NULL)
-			delete test_list;
+		if (curr_list != NULL)
+			delete curr_list;
 		delete conf;
 		exit(-1);
 	}
@@ -126,11 +143,11 @@ int main(int argc, const char *argv[]) {
 			bg_color_index = 1;
 	}
 
-	ui *interface = new ui(test_list, text_mode, bg_color_index,
+	ui *interface = new ui(curr_list, text_mode, bg_color_index,
 						   fg_color_index);
 	if (interface == NULL) {
 		printf("Cannot allocate user interface.\n");
-		delete test_list;
+		delete curr_list;
 		delete conf;
 		exit(-1);
 	}
@@ -169,6 +186,11 @@ int main(int argc, const char *argv[]) {
 
 	interface->draw_panel();
 	interface->filter_list(search);
+
+	list_entry *entry = curr_list->get_entry(prev_entry_index);
+	if (entry != NULL) {
+		interface->set_selected_entry(entry);
+	}
 
 	if (text_mode == FALSE) {
 		vga::color_t lerp;
@@ -278,7 +300,7 @@ int main(int argc, const char *argv[]) {
 	}
 
 	delete interface;
-	delete test_list;
+	delete curr_list;
 
 	if (text_mode == TRUE) {
 		clrscr();
@@ -400,6 +422,7 @@ bool_t create_batch(const char *parent, const list_entry *entry, batch_mode mode
 		return FALSE;
 
 	fputs("@echo off\n", fp);
+	fprintf(fp, "REM entry %d\n", entry->get_index());
 
 	if (dosbox) {
 		if (entry->get_cycles() > 0)
@@ -419,10 +442,41 @@ bool_t create_batch(const char *parent, const list_entry *entry, batch_mode mode
 	if (dosbox)
 		fputs("cycles fixed 20000\n", fp);
 
+	if (batch_pause)
+		fputs("pause\n", fp);
+
 	fflush(fp);
 	fclose(fp);
 
 	return TRUE;
+}
+
+int get_previous_entry_index() {
+	FILE *fp = fopen(temp_batch, "rt");
+
+	if (fp != NULL) {
+		char buffer[20];
+		while (fgets(buffer, 20, fp) != NULL) {
+			if (strncmp(buffer, "REM entry ", 10) != 0)
+				continue;
+
+			return parse_int(buffer + 10);
+		}
+
+		fclose(fp);
+	}
+
+	return -1;
+}
+
+int parse_int(char *ptr) {
+	int number = 0;
+	while (ptr != NULL && string::is_digit(*ptr) == TRUE) {
+		number = (number * 10) + (*ptr - '0');
+		++ptr;
+	}
+
+	return number;
 }
 
 void write_cwd_and_exec(const char *full_path, FILE *fp) {
@@ -473,6 +527,8 @@ void parse_args(int argc, const char *argv[], const char **list_name) {
 					text_mode = TRUE;
 				} else if (strcmp(argv[i], "/nosplash") == 0) {
 					show_splash = FALSE;
+				} else if (strcmp(argv[i], "/batchpause") == 0) {
+					batch_pause = TRUE;
 				} else {
 					printf("Unknown option %s, %s.\n",
 						argv[i], help_hint);
@@ -496,16 +552,21 @@ void parse_args(int argc, const char *argv[], const char **list_name) {
 }
 
 void print_usage() {
-	printf("RLOADER Version " VERSION "\n2021 Marco Sacchi\n\n"
-		   "Syntax: RLOADER [/?|/h|/dosbox] [list_name]\n\n"
-		   "/?, /h     Display this help.\n"
-		   "/dosbox    Can be specified when this program run on DOSBox.\n"
-		   "/textmode  Use a text-based UI intead of a graphical one.\n"
-		   "/nosplash  Do not show splash screen.\n"
-		   "           it sets correct CPU cycles for launched item.\n"
-		   "list_name  name of list to load, automatically readed also from\n"
-		   "           RLOADER_LIST environment variable if set.\n\n"
-		   "NOTE: options are case-sensitive.\n\n");
+	printf(
+		"RLOADER Version " VERSION "\n2021 Marco Sacchi\n\n"
+		"Syntax: RLOADER [/?|/h|/dosbox|/batchpause] [list_name]\n\n"
+		"/?, /h       Display this help.\n"
+		"/dosbox      Can be specified when this program run on DOSBox and\n"
+		"             it sets correct CPU cycles for launched item.\n"
+		"/textmode    Use a text-based UI intead of a graphical one.\n"
+		"/nosplash    Do not show splash screen.\n"
+		"/batchpause  Add a pause command at the end of generated batch file\n"
+		"             used to run or configure selected item to simplify\n"
+		"             troubleshotting.\n"
+		"list_name    name of list to load, automatically readed also from\n"
+		"             RLOADER_LIST environment variable if set.\n\n"
+		"NOTE: options are case-sensitive.\n\n"
+	);
 }
 
 #ifdef TESTS

@@ -72,11 +72,15 @@ void ui::set_panel_rect(vga::text_rect_t *rect) {
 void ui::filter_list(const char *search) {
 	strcpy(m_filtered_string, search);
 
+	list_entry *entry = NULL;
+	if (m_filtered != NULL)
+		entry = m_filtered[m_selected_entry];
+
 	m_selected_entry = 0;
 	m_filtered = m_list->filter(search, &m_filtered_count);
 
 	this->draw_search_box();
-	this->draw_list();
+	this->set_selected_entry(entry);
 }
 
 void ui::scroll_list(int offset) {
@@ -406,6 +410,20 @@ const list_entry *ui::get_selected_entry() {
 		return NULL;
 
 	return m_filtered[m_selected_entry];
+}
+
+void ui::set_selected_entry(list_entry *entry) {
+	for (int i = 0; i < m_filtered_count; ++i) {
+		if (m_filtered[i] != entry)
+			continue;
+
+		m_selected_entry = i;
+		this->draw_list();
+		return;
+	}
+
+	m_selected_entry = 0;
+	this->draw_list();
 }
 
 bool_t ui::display_help() {

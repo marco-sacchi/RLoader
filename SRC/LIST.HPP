@@ -30,7 +30,7 @@ public:
 	 */
 	const char *get_path() { return m_list_path; }
 
-	/** Get list entry.
+	/** Get list entry by index.
 	 *
 	 * @param index Entry zero-based index.
 	 * @return Entry object at specified index.
