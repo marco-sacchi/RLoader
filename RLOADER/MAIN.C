@@ -9,6 +9,7 @@
 
 const char *ui = "ui.exe";
 const char *temp_batch = "rloadrun.bat";
+const char *temp_cycles = "cycles.$$$";
 const char *err_format = "Error running: %s";
 
 int main(int argc, char *argv[]) {
@@ -35,6 +36,9 @@ int main(int argc, char *argv[]) {
 			// Delete temporary files that may be left on disk.
 			if (access(temp_batch, 0) == 0)
 				unlink(temp_batch);
+			if (access(temp_cycles, 0) == 0)
+				unlink(temp_cycles);
+
 			printf(err_format, ui);
 			exit(-1);
 		}

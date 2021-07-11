@@ -63,6 +63,12 @@ public:
 	 * @return The number of cycles to set when this program run on DOSBox.
 	 */
 	uint16_t get_cycles() const { return m_cycles; }
+	/** Set cycles required for emulation.
+	 *
+	 * @param cycles The number of cycles to set when this program
+	 *               run on DOSBox.
+	 */
+	void set_cycles(uint16_t cycles) { m_cycles = cycles; }
 
 private:
 	/** Parse field.

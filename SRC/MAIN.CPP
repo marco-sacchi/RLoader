@@ -84,6 +84,7 @@ const char *splash_file = "res/splash.bmp";
 const char *ansi80_splash_file = "res/splash80.bin";
 const char *ansi40_splash_file = "res/splash40.bin";
 const char *temp_batch = "rloadrun.bat";
+const char *temp_cycles = "cycles.$$$";
 const char *help_hint = "type RLOADER /? for help";
 
 /** Flag to track execution inside DOSBox or not, parsed form arguments. */
@@ -189,6 +190,11 @@ int main(int argc, const char *argv[]) {
 
 	list_entry *entry = curr_list->get_entry(prev_entry_index);
 	if (entry != NULL) {
+		int cycles = get_current_cycles();
+		if (cycles >= 0 && entry->get_cycles() != cycles &&
+			interface->show_cycles_changed_dialog() == 0)
+			entry->set_cycles(cycles);
+
 		interface->set_selected_entry(entry);
 	}
 
@@ -439,8 +445,12 @@ bool_t create_batch(const char *parent, const list_entry *entry, batch_mode mode
 	write_cwd(parent, fp);
 	fputc('\n', fp);
 
-	if (dosbox)
+	if (dosbox) {
+		if (mode == BATCH_EXECUTE)
+			fprintf(fp, "cycles > %s\n", temp_cycles);
+
 		fputs("cycles fixed 20000\n", fp);
+	}
 
 	if (batch_pause)
 		fputs("pause\n", fp);
@@ -467,6 +477,26 @@ int get_previous_entry_index() {
 	}
 
 	return -1;
+}
+
+int get_current_cycles() {
+	if (dosbox == FALSE || access(temp_cycles, 0) != 0)
+		return -1;
+
+	FILE *fp = fopen(temp_cycles, "rt");
+	char buffer[20];
+	fgets(buffer, 20, fp);
+	fclose(fp);
+	unlink(temp_cycles);
+
+	if (strncmp(buffer, "auto", 4) == 0)
+		return 0;
+
+	char *ptr = buffer;
+	if (strncmp(buffer, "fixed ", 6) == 0)
+		ptr += 6;
+
+	return parse_int(ptr);
 }
 
 int parse_int(char *ptr) {
