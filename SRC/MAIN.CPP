@@ -15,13 +15,7 @@
 #include "ui.hpp"
 #include "string.hpp"
 
-#ifdef TESTS
-
-bool_t tests();
-
-#endif
-
-#define VERSION		"1.0.0"
+#define VERSION		"1.0.1"
 
 /** Batch creation modes. */
 enum batch_mode {
@@ -35,9 +29,20 @@ enum batch_mode {
 void draw_logo();
 /** Draw and fade in/out the splash screen. */
 void draw_splash_screen();
-/** Get entry index of last run/configured entry. */
+/** Get entry index of last run/configured entry.
+ *
+ * @return Index of previous selected entry on list, -1 on parse error.
+ */
 int get_previous_entry_index();
-/** Get current DOSBox cycles setting. */
+/** Get previous thumbnail preference.
+ *
+ * @return Index of previous thumbnail directory, -1 on parse error.
+ */
+int get_previous_thumbnail_pref();
+/** Get current DOSBox cycles setting.
+ *
+ * @return Current DOSBox cycles, -1 on parse error.
+ */
 int get_current_cycles();
 /** Parse string representation of integer.
  *
@@ -49,11 +54,13 @@ int parse_int(char *ptr);
  *
  * @param parent This program.
  * @param entry List entry for which create the batch file.
+ * @param thumbnail_pref Index of which directory is currently used
+ *                       to display thumbnails.
  * @param mode Batch creation mode (lauch or setup).
  * @return True on success, false on program not found.
  */
 bool_t create_batch(const char *parent, const list_entry *entry,
-					batch_mode mode);
+					int thumbnail_pref, batch_mode mode);
 /** Write commands to change drive, working directory and execute program.
  *
  * @param full_path Fully-qualified path with drive and program filename
@@ -95,14 +102,17 @@ bool_t show_splash = TRUE;
 bool_t text_mode = FALSE;
 /** Flag to pause the dynamically created batch file before re-run RLoader. */
 bool_t batch_pause = FALSE;
+/** Flag to show free memory before load a list entry. */
+bool_t batch_mem_free = FALSE;
 /** Configuration object readed from configuration file. */
 config *conf = NULL;
 
 int main(int argc, const char *argv[]) {
-	int prev_entry_index = 0;
+	int prev_entry_index = 0, prev_thumbnail_pref = 0;
 
 	if (access(temp_batch, 0) == 0) {
 		prev_entry_index = max(0, get_previous_entry_index());
+		prev_thumbnail_pref = max(0, get_previous_thumbnail_pref());
 		unlink(temp_batch);
 	}
 
@@ -190,6 +200,8 @@ int main(int argc, const char *argv[]) {
 
 	list_entry *entry = curr_list->get_entry(prev_entry_index);
 	if (entry != NULL) {
+		// TODO: replace == 0 with constant from extended user-interface
+		//       when implemented.
 		int cycles = get_current_cycles();
 		if (cycles >= 0 && entry->get_cycles() != cycles &&
 			interface->show_cycles_changed_dialog() == 0)
@@ -197,6 +209,8 @@ int main(int argc, const char *argv[]) {
 
 		interface->set_selected_entry(entry);
 	}
+
+	interface->set_thumbnail_loop(prev_thumbnail_pref);
 
 	if (text_mode == FALSE) {
 		vga::color_t lerp;
@@ -248,7 +262,9 @@ int main(int argc, const char *argv[]) {
 						break;
 					}
 
-					if (create_batch(argv[0], entry, BATCH_SETUP) == TRUE)
+					prev_thumbnail_pref = interface->get_thumbnail_loop();
+					if (create_batch(argv[0], entry, prev_thumbnail_pref,
+									 BATCH_SETUP) == TRUE)
 						exit = TRUE;
 
 					break;
@@ -287,7 +303,9 @@ int main(int argc, const char *argv[]) {
 			if (ch == 0x0d) {
 				const list_entry *entry = interface->get_selected_entry();
 				if (entry != NULL) {
-					if (create_batch(argv[0], entry, BATCH_EXECUTE) == TRUE)
+					prev_thumbnail_pref = interface->get_thumbnail_loop();
+					if (create_batch(argv[0], entry, prev_thumbnail_pref,
+									 BATCH_EXECUTE) == TRUE)
 						exit = TRUE;
 
 					interface->display_cannot_launch(entry);
@@ -407,7 +425,8 @@ void draw_splash_screen() {
 		delete pic;
 }
 
-bool_t create_batch(const char *parent, const list_entry *entry, batch_mode mode) {
+bool_t create_batch(const char *parent, const list_entry *entry,
+					int thumbnail_pref, batch_mode mode) {
 	char full_path[MAXPATH];
 
 	strcpy(full_path, entry->get_path());
@@ -429,6 +448,10 @@ bool_t create_batch(const char *parent, const list_entry *entry, batch_mode mode
 
 	fputs("@echo off\n", fp);
 	fprintf(fp, "REM entry %d\n", entry->get_index());
+	fprintf(fp, "REM thumbpref %d\n", thumbnail_pref);
+
+	if (batch_mem_free)
+		fprintf(fp, "\nmem /free\npause\n\n");
 
 	if (dosbox) {
 		if (entry->get_cycles() > 0)
@@ -471,6 +494,24 @@ int get_previous_entry_index() {
 				continue;
 
 			return parse_int(buffer + 10);
+		}
+
+		fclose(fp);
+	}
+
+	return -1;
+}
+
+int get_previous_thumbnail_pref() {
+	FILE *fp = fopen(temp_batch, "rt");
+
+	if (fp != NULL) {
+		char buffer[20];
+		while (fgets(buffer, 20, fp) != NULL) {
+			if (strncmp(buffer, "REM thumbpref ", 14) != 0)
+				continue;
+
+			return parse_int(buffer + 14);
 		}
 
 		fclose(fp);
@@ -559,6 +600,8 @@ void parse_args(int argc, const char *argv[], const char **list_name) {
 					show_splash = FALSE;
 				} else if (strcmp(argv[i], "/batchpause") == 0) {
 					batch_pause = TRUE;
+				} else if (strcmp(argv[i], "/batchmemfree") == 0) {
+					batch_mem_free = TRUE;
 				} else {
 					printf("Unknown option %s, %s.\n",
 						argv[i], help_hint);
@@ -584,85 +627,18 @@ void parse_args(int argc, const char *argv[], const char **list_name) {
 void print_usage() {
 	printf(
 		"RLOADER Version " VERSION "\n2021 Marco Sacchi\n\n"
-		"Syntax: RLOADER [/?|/h|/dosbox|/batchpause] [list_name]\n\n"
-		"/?, /h       Display this help.\n"
-		"/dosbox      Can be specified when this program run on DOSBox and\n"
-		"             it sets correct CPU cycles for launched item.\n"
-		"/textmode    Use a text-based UI intead of a graphical one.\n"
-		"/nosplash    Do not show splash screen.\n"
-		"/batchpause  Add a pause command at the end of generated batch file\n"
-		"             used to run or configure selected item to simplify\n"
-		"             troubleshotting.\n"
-		"list_name    name of list to load, automatically readed also from\n"
-		"             RLOADER_LIST environment variable if set.\n\n"
+		"Syntax: RLOADER [/?|/h|/dosbox|/batchpause|/batchmemfree] [list_name]\n\n"
+		"/?, /h         Display this help.\n"
+		"/dosbox        Can be specified when this program run on DOSBox\n"
+		"               and it sets correct CPU cycles for launched item.\n"
+		"/textmode      Use a text-based UI intead of a graphical one.\n"
+		"/nosplash      Do not show splash screen.\n"
+		"/batchpause    Add a pause command at the end of generated batch file\n"
+		"               used to launch or configure selected item to simplify\n"
+		"               troubleshotting.\n"
+		"/batchmemfree  Display free memory before launch or configure an entry.\n"
+		"list_name      name of list to load, automatically readed also from\n"
+		"               RLOADER_LIST environment variable if set.\n\n"
 		"NOTE: options are case-sensitive.\n\n"
 	);
 }
-
-#ifdef TESTS
-
-bool_t tests() {
-	vga::set_cursor_type(0, 15);
-	vga::set_cursor_pos(3, 16);
-
-	uint8_t attrs = vga::encode_attrs(0, 1, 0);
-
-	vga::write_char('c', attrs, 40);
-
-	getch();
-
-	vga::text_rect_t rect;
-	rect.top = 0;
-	rect.left = 0;
-	rect.bottom = 24;
-	rect.right = 39;
-	vga::scroll_page_up(1, attrs, &rect);
-
-	vga::set_cursor_pos(24, 16);
-	vga::write_char('a', attrs, 2);
-	vga::write_string("Test string", attrs, vga::USE_ATTRS_UPDATE_CURSOR);
-
-	getch();
-
-	bitmap *bmp = new bitmap();
-
-	if (bmp->load("lists/games/titles/doom.bmp") == FALSE) {
-		delete bmp;
-		vga::set_mode(0x03);
-		return FALSE;
-	}
-
-	graphics::set_ega_palette(bmp);
-	graphics::draw(bmp, 320, 30 * 16 - bmp->get_height() / 2);
-	delete bmp;
-
-	getch();
-
-	rect.top = 0;
-	rect.left = 40;
-	rect.bottom = 39;
-	rect.right = 79;
-	vga::set_map_mask_reg(0x0f);
-
-	attrs = vga::encode_attrs(0, 0, 0);
-
-	int i = 15;
-	while (i-- > 0) {
-		vga::scroll_page_up(1, attrs, &rect);
-		delay(10);
-	}
-
-	getch();
-
-	i = 15;
-	while (i-- > 0) {
-		vga::scroll_page_up(1, attrs, &rect);
-		delay(10);
-	}
-
-	getch();
-
-	return TRUE;
-}
-
-#endif

@@ -3,10 +3,10 @@
 *.bak
 *.bkp
 *.dst
+*.zip
 
 backup.bat
 package.bat
-rloader.zip
 
 lists/**
 

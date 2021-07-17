@@ -69,6 +69,19 @@ If you want to use the text-mode interface, type:
 RLOADER /textmode example
 ```
 
+# Troubleshooting
+
+RLoader also has arguments to simplify troubleshooting if the launch of the
+listed programs fails:
+
+- `/batchpause` pauses the dynamically generated batch file that launches the
+  program just before returning to RLoader, in order to make any error
+  messages readable;
+
+- `/batchmemfree` displays the memory available to the program that is
+  launched using the `mem /free` command, available both in compatible MS-DOS
+  environments and in the various flavors of DOSBox.
+
 # List and info navigation
 
 - **Arrow keys** Move to previous/next entry.

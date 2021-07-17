@@ -62,6 +62,14 @@ public:
 	void set_selected_entry(list_entry *entry);
 	/** Loop between titile and in-program thumbnails. */
 	void loop_thumbnail();
+	/** Get thumbnail loop index.
+	 *
+	 * @return Index of current thumbnail loop directory.
+	 */
+	int get_thumbnail_loop() { return m_thumbnail_loop; }
+	/** Set thumbnail loop index.
+	 */
+	void set_thumbnail_loop(int index);
 
 	/** Test if info file is displayed.
 	 *
@@ -94,6 +102,7 @@ public:
 	/** Display message to inform user that entry has no setup program. */
 	void display_no_setup();
 
+	int show_cycles_changed_dialog();
 private:
 	/** Scroll entry list.
 	 *

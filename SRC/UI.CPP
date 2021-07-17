@@ -91,8 +91,6 @@ void ui::scroll_list(int offset) {
 								   m_filtered_count - 1);
 	int new_offset = this->calc_list_offset(new_selected_entry);
 
-	m_thumbnail_loop = 0;
-
 	if (new_offset == m_offset) {
 		if (new_selected_entry != m_selected_entry) {
 			this->xor_selected_entry();
@@ -213,8 +211,6 @@ void ui::draw_search_box() {
 void ui::draw_list() {
 	int lines = m_list_rect.bottom - m_list_rect.top + 1;
 	vga::scroll_page_up((uint8_t)lines, m_blank_attrs, &m_list_rect);
-
-	m_thumbnail_loop = 0;
 
 	if (m_filtered_count < 1) {
 		this->draw_list_scroll_bar();
@@ -365,6 +361,11 @@ void ui::loop_thumbnail() {
 		return;
 
 	m_thumbnail_loop = (m_thumbnail_loop + 1) % THUMBNAIL_DIRS_COUNT;
+	this->draw_thumbnail(this->get_selected_entry());
+}
+
+void ui::set_thumbnail_loop(int index) {
+	m_thumbnail_loop = max(0, index) % THUMBNAIL_DIRS_COUNT;
 	this->draw_thumbnail(this->get_selected_entry());
 }
 
@@ -749,6 +750,12 @@ void ui::display_cannot_setup(const list_entry *entry) {
 
 void ui::display_no_setup() {
 	this->draw_thumbnail_message("No configuration program specified.");
+}
+
+int ui::show_cycles_changed_dialog() {
+	// TODO: stub method to show dialog for confirm or cancel cycles
+	//       value update on launched entry.
+	return -1;
 }
 
 void ui::xor_chars(uint8_t row, uint8_t col, uint16_t count) {
