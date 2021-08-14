@@ -69,6 +69,21 @@ If you want to use the text-mode interface, type:
 RLOADER /textmode example
 ```
 
+# Loading RLoader in upper memory
+
+As pointed out by @cyberluke the resident part of RLoader occupies an entire
+segment (64Kb) even if the executable is smaller in size.
+
+Now that it has been rewritten in assembly, a TSR-like behavior has been
+implemented whereby all unused memory paragraphs are released immediately
+after loading. This, together with the reduction of a tenth of the file size,
+makes it easier to load into upper memory, leaving the rest of the
+conventional memory available to the launched programs.
+
+```
+LH RLOADER example
+```
+
 # Troubleshooting
 
 RLoader also has arguments to simplify troubleshooting if the launch of the
