@@ -21,8 +21,8 @@ uibutton::uibutton(uint16_t id, int top, int left, int width,
 	m_rect.right = left + width - 1;
 
 	// DEBUG: temp debug values.
-	m_paint_attrs = 0x17;
-	m_blank_attrs = 0x11;
+	this->set_fore_color(7);
+	this->set_back_color(1);
 }
 
 uibutton::~uibutton() {
@@ -42,6 +42,9 @@ void uibutton::lose_focus() {
 }
 
 void uibutton::repaint() {
+	if (this->can_repaint() == FALSE)
+		return;
+
 	vga::text_rect_t rect;
 	this->get_paint_rect(&rect);
 
