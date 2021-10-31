@@ -50,8 +50,6 @@ void bitmap_encoder::planar_4bits(const uint8_t *row) {
 	uint8_t *encoded = m_encode_buffer;
 	uint8_t col_offset = (uint8_t)m_color_offset;
 
-	// TODO: rendere compatibile con set di istruzioni 8086
-
 	asm {
 		cli
 		cld
