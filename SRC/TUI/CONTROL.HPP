@@ -21,6 +21,13 @@ public:
 	 */
 	virtual ~uicontrol();
 
+	/** Set view linked to this control.
+	 *
+	 * @note This method is used internally.
+	 * @param view View object.
+	 */
+	void set_view(uiview *view) { m_view = view; }
+
 	/** Get control unique identifier.
 	 *
 	 * @return Control unique identifier.
@@ -40,16 +47,38 @@ public:
 	 */
 	void set_accelerator(char accelerator);
 
+	/** Get control text/foreground color.
+	 *
+	 * @return Color index.
+	 */
+	uint8_t get_fore_color();
 	/** Set control text/foreground color.
 	 *
 	 * @param color Color index.
 	 */
 	void set_fore_color(uint8_t color);
+	/** Get control background color.
+	 *
+	 * @return Color index.
+	 */
+	uint8_t get_back_color();
 	/** Set control background color.
 	 *
 	 * @param color Color index.
 	 */
 	void set_back_color(uint8_t color);
+	/** Get transparency flag.
+	 *
+	 * @return TRUE if transparency is enabled, false otherwise.
+	 */
+	bool_t get_transparency();
+	/** Set transparency flag.
+	 *
+	 * @param enabled TRUE to enable transparency, false otherwise.
+	 */
+	void set_transparency(bool_t enabled);
+	/** Recompute painting color attributes when transparency is enabled. */
+	void update_transparency_attrs();
 
 	/** Check if control can got focus.
 	 *
@@ -148,6 +177,14 @@ protected:
 	 */
 	void get_paint_rect(vga::text_rect_t *rect);
 
+	/** Check if this control can be repainted.
+	 *
+	 * A control can be repainted when is descendant of a window control
+	 * linked to a view that is in uiview::STATE_OPENED.
+	 * @return TRUE if control can be repainted, FALSE otherwise.
+	 */
+	bool_t uicontrol::can_repaint();
+
 	/** Unique identifier. */
 	uint16_t m_id;
 	/** Accelerator as uppercase ASCII character. */
@@ -163,8 +200,15 @@ protected:
 	uint8_t m_paint_attrs;
 	/** Control blank characters attributes. */
 	uint8_t m_blank_attrs;
-
+	/** Transparency flag.
+	 *
+	 * When true this control inherits background color from first ancestor
+	 * control with this flag disabled.
+	 */
+	bool_t m_transparent;
 private:
+	/** View this control is part of. */
+	uiview *m_view;
 	/** Parent control. */
 	uicontrol *m_parent;
 	/** Next sibling control. */
