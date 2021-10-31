@@ -18,8 +18,11 @@ uilabel::uilabel(uint16_t id, int top, int left, const char *text)
 	m_rect.right = left + text_length - 1;
 
 	// DEBUG: temp debug values.
-	m_paint_attrs = 0x17;
-	m_blank_attrs = 0x11;
+	this->set_fore_color(7);
+	this->set_back_color(0);
+
+	// Label is transparent by default.
+	m_transparent = TRUE;
 }
 
 uilabel::~uilabel() {
@@ -28,6 +31,11 @@ uilabel::~uilabel() {
 }
 
 void uilabel::repaint() {
+	if (this->can_repaint() == FALSE)
+		return;
+
+	this->update_transparency_attrs();
+
 	vga::text_rect_t rect;
 	this->get_paint_rect(&rect);
 
