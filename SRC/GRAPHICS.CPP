@@ -212,6 +212,10 @@ void graphics::draw(ansi_picture *pic, uint8_t row, uint8_t column) {
 	}
 }
 
+void graphics::draw_filled_rect(vga::text_rect_t *rect, uint8_t attrs) {
+	vga::scroll_page_up(rect->bottom - rect->top + 1, attrs & 0xf0, rect);
+}
+
 void graphics::draw_frame(vga::text_rect_t *rect, uint8_t attrs) {
 	uint8_t width = rect->right - rect->left + 1;
 
@@ -236,6 +240,42 @@ void graphics::draw_frame(vga::text_rect_t *rect, uint8_t attrs) {
 
 	vga::set_cursor_pos(rect->bottom, rect->right);
 	vga::write_char(0xd9, attrs, 1);
+}
+
+void graphics::draw_filled_frame(vga::text_rect_t *rect, uint8_t attrs) {
+	graphics::draw_filled_rect(rect, attrs);
+	graphics::draw_frame(rect, attrs);
+}
+
+void graphics::draw_outline(vga::text_rect_t *rect, uint8_t color) {
+	int width = (rect->right - rect->left + 1) << 3;
+	int height = (rect->bottom - rect->top + 1) << 4;
+	int x = rect->left << 3, y = (int)rect->top << 4;
+
+	graphics::draw_horiz_line(x, y - 1, width, color);
+	graphics::draw_horiz_line(x, y + height, width, color);
+
+	graphics::draw_vert_block(x - 1, y, height, color, 0x01);
+	graphics::draw_vert_block(x + width, y, height, color, 0x80);
+}
+
+void graphics::draw_focus_outline(vga::text_rect_t *rect, uint8_t color) {
+	int width = (rect->right - rect->left + 1) << 3;
+	int height = (rect->bottom - rect->top + 1) << 4;
+	int x = rect->left << 3, y = (int)rect->top << 4;
+
+	graphics::draw_horiz_line(x, y - 2, width, color);
+	graphics::draw_horiz_line(x, y - 1, width, color);
+	graphics::draw_horiz_line(x, y + height, width, color);
+	graphics::draw_horiz_line(x, y + height + 1, width, color);
+
+	graphics::draw_vert_block(x - 1, y - 1, 1, color, 0x01);
+	graphics::draw_vert_block(x - 1, y, height, color, 0x03);
+	graphics::draw_vert_block(x - 1, y + height, 1, color, 0x01);
+
+	graphics::draw_vert_block(x + width, y - 1, 1, color, 0x80);
+	graphics::draw_vert_block(x + width, y, height, color, 0xc0);
+	graphics::draw_vert_block(x + width, y + height, 1, color, 0x80);
 }
 
 void graphics::draw_scroll_bar(vga::text_rect_t *rect, uint8_t attrs,
@@ -390,5 +430,71 @@ void graphics::italic_effect(uint8_t row, uint8_t column, uint8_t chars) {
 		pop di
 		pop es
 		sti
+	}
+}
+
+void graphics::draw_horiz_line(int x, int y, int length, uint8_t color) {
+	graphics::or_horiz_line(x, y, length, color ^ 0xff, 0x00);
+	graphics::or_horiz_line(x, y, length, color, 0xff);
+}
+
+void graphics::draw_vert_block(int x, int y, int length, uint8_t mask, uint8_t bits) {
+	graphics::or_vert_block(x, y, length, mask ^ 0xff, 0x00);
+	graphics::or_vert_block(x, y, length, mask, bits);
+}
+
+void graphics::or_horiz_line(int x, int y, int length, uint8_t mask, uint8_t bits) {
+	uint16_t vmem_offset = y * 80 + (x >> 3);
+	length >>= 3;
+
+	vga::set_map_mask_reg(mask);
+	asm {
+		cli
+
+		push	es
+		push	di
+
+		cld
+
+		mov		cx, length
+		mov		al, bits
+
+		les		di, [vmem]
+		add		di, vmem_offset
+
+		rep		stosb
+
+		pop		di
+		pop		es
+	}
+}
+
+void graphics::or_vert_block(int x, int y, int length, uint8_t mask, uint8_t bits) {
+	vga::set_map_mask_reg(mask);
+
+	uint16_t vmem_offset = y * 80 + (x >> 3);
+
+	asm {
+		cli
+
+		push	es
+		push	di
+
+		cld
+
+		mov		cx, length
+		mov		al, bits
+
+		les		di, [vmem]
+		add		di, vmem_offset
+	}
+	lines_loop:
+	asm {
+		stosb
+		add		di, 79
+		loop	lines_loop
+
+		pop		di
+		pop		es
 	}
 }

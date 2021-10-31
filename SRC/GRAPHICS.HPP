@@ -72,12 +72,30 @@ public:
 	 */
 	static void draw(ansi_picture *pic, uint8_t row, uint8_t column);
 
+	/** Draw filled rectangle using text BIOS services.
+	 *
+	 * @param rect Rectangle to fill.
+	 * @param attrs Attrbutes of the drawed characters.
+	 */
+	static void draw_filled_rect(vga::text_rect_t *rect, uint8_t attrs);
+
 	/** Draw frame using text BIOS services.
 	 *
 	 * @param rect Rectangle into which draw the frame.
 	 * @param attrs Attrbutes of the drawed characters.
 	 */
 	static void draw_frame(vga::text_rect_t *rect, uint8_t attrs);
+
+	/** Draw filled frame using text BIOS services.
+	 *
+	 * @param rect Rectangle into which draw the frame.
+	 * @param attrs Attrbutes of the drawed characters.
+	 */
+	static void draw_filled_frame(vga::text_rect_t *rect, uint8_t attrs);
+
+	static void draw_outline(vga::text_rect_t *rect, uint8_t color);
+	static void draw_focus_outline(vga::text_rect_t *rect, uint8_t color);
+
 	/** Draw scroll bar using text BIOS services.
 	 *
 	 * @param rect Reference rectangle, the rendered scroll bar is of the
@@ -113,6 +131,14 @@ private:
 	 * @param t Interpolation factor in range [0.0, 1.0].
 	 */
 	static void lerp_ega_palette(bitmap *bmp, const vga::color_t to_color, float t);
+
+	static void draw_horiz_line(int x, int y, int length, uint8_t color);
+
+	static void draw_vert_block(int x, int y, int length, uint8_t color, uint8_t bits);
+
+	static void or_horiz_line(int x, int y, int length, uint8_t mask, uint8_t bits);
+
+	static void or_vert_block(int x, int y, int length, uint8_t mask, uint8_t bits);
 };
 
 #endif

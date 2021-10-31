@@ -160,6 +160,15 @@ uint8_t vga::encode_attrs(uint8_t back_color, uint8_t fore_color,
 			((blink & 0x01) << 7);
 }
 
+void vga::decode_attrs(uint8_t attrs, uint8_t *back_color,
+					   uint8_t *fore_color, uint8_t *blink) {
+	*fore_color = attrs & 0x0f;
+	// TODO: track background intensity and get only 3 of 4 upper bits
+	//       leaving blink at zero when backgroud intensity is enabled.
+	*back_color = (attrs & 0xf0) >> 4;
+	*blink = (attrs >> 7);
+}
+
 void vga::scroll_page_up(uint8_t rows, uint8_t attrs,
 						 const vga::text_rect_t *rect) {
 	union REGS regs;
@@ -257,6 +266,46 @@ void vga::write_attrs(uint8_t row, uint8_t col, uint8_t new_attrs,
 	}
 }
 
+void vga::or_attrs(uint8_t row, uint8_t col, uint8_t or_attrs,
+					uint16_t count) {
+	uint16_t start_offset = (uint16_t)row * curr_state.columns * 2 +
+							(uint16_t)col * 2;
+	asm {
+		push es
+		push di
+		push ds
+		push si
+
+		les di, [text_vmem]
+		add di, start_offset
+		inc di
+
+		mov si, es
+		mov ds, si
+		mov si, di
+
+		mov ah, or_attrs
+		mov cx, count
+
+		cld
+	}
+	attrs_loop:
+	asm {
+		lodsb
+		or al, ah
+		stosb
+
+		inc di
+		inc si
+		loop attrs_loop
+
+		pop si
+		pop ds
+		pop di
+		pop es
+	}
+}
+
 void vga::xor_attrs(uint8_t row, uint8_t col, uint8_t xor_attrs,
 					uint16_t count) {
 	uint16_t start_offset = (uint16_t)row * curr_state.columns * 2 +
@@ -271,9 +320,9 @@ void vga::xor_attrs(uint8_t row, uint8_t col, uint8_t xor_attrs,
 		add di, start_offset
 		inc di
 
-		lds si, [text_vmem]
-		add si, start_offset
-		inc si
+		mov si, es
+		mov ds, si
+		mov si, di
 
 		mov ah, xor_attrs
 		mov cx, count
@@ -284,6 +333,46 @@ void vga::xor_attrs(uint8_t row, uint8_t col, uint8_t xor_attrs,
 	asm {
 		lodsb
 		xor al, ah
+		stosb
+
+		inc di
+		inc si
+		loop attrs_loop
+
+		pop si
+		pop ds
+		pop di
+		pop es
+	}
+}
+
+void vga::and_attrs(uint8_t row, uint8_t col, uint8_t and_attrs,
+					uint16_t count) {
+	uint16_t start_offset = (uint16_t)row * curr_state.columns * 2 +
+							(uint16_t)col * 2;
+	asm {
+		push es
+		push di
+		push ds
+		push si
+
+		les di, [text_vmem]
+		add di, start_offset
+		inc di
+
+		mov si, es
+		mov ds, si
+		mov si, di
+
+		mov ah, and_attrs
+		mov cx, count
+
+		cld
+	}
+	attrs_loop:
+	asm {
+		lodsb
+		and al, ah
 		stosb
 
 		inc di

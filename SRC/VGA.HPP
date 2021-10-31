@@ -223,6 +223,16 @@ public:
 	 */
 	static uint8_t encode_attrs(uint8_t back_color, uint8_t fore_color,
 								uint8_t blink);
+	/** Decode character attributes.
+	 *
+	 * @see set_blinking
+	 * @param attrs Attributes byte to decode.
+	 * @param back_color Decoded background color.
+	 * @param fore_color Decoded foreground color.
+	 * @param blink Decoded blinking text bit.
+	 */
+	static void vga::decode_attrs(uint8_t attrs, uint8_t *back_color,
+								  uint8_t *fore_color, uint8_t *blink);
 
 	/** Scroll rectangle up using BIOS.
 	 *
@@ -261,6 +271,15 @@ public:
 	 */
 	static void write_attrs(uint8_t row, uint8_t col, uint8_t new_attrs,
 							uint16_t count);
+	/** OR attributes preserving characters using video memory access.
+	 *
+	 * @param row Row.
+	 * @param col Start column.
+	 * @param or_attrs Value ORed with readed attributes.
+	 * @param count Number of cells for which change attrs.
+	 */
+	static void or_attrs(uint8_t row, uint8_t col, uint8_t or_attrs,
+						 uint16_t count);
 	/** XOR attributes preserving characters using video memory access.
 	 *
 	 * @param row Row.
@@ -270,6 +289,16 @@ public:
 	 */
 	static void xor_attrs(uint8_t row, uint8_t col, uint8_t xor_attrs,
 						  uint16_t count);
+	/** AND attributes preserving characters using video memory access.
+	 *
+	 * @param row Row.
+	 * @param col Start column.
+	 * @param and_attrs Value ANDed with readed attributes.
+	 * @param count Number of cells for which change attrs.
+	 */
+	static void and_attrs(uint8_t row, uint8_t col, uint8_t and_attrs,
+						  uint16_t count);
+
 	/** Write null-terminated string to screen at current corsor
 	 *  position using BIOS.
 	 *

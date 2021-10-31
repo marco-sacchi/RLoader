@@ -131,6 +131,7 @@
 
 #pragma pack(push, 1);
 
+/** Keyboard handling. */
 class keyboard {
 public:
 	/** Keyboard events. */
