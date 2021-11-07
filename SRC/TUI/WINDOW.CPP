@@ -17,9 +17,15 @@ uiwindow::uiwindow(uint16_t id, int top, int left, int width, int height,
 		*m_caption = ' ';
 		strcpy(m_caption + 1, caption);
 		*(m_caption + caption_len + 1) = ' ';
-		*(m_caption + caption_len + 2) = '\0';
+		*(m_caption + caption_len + 2) = NULL;
 	} else
 		m_caption = NULL;
+
+	if (m_style & uiwindow::CENTERED) {
+		const vga::state_t *state = vga::get_current_state();
+		top = (state->rows - height) >> 1;
+		left = (80 - width) >> 1;
+	}
 
 	m_rect.top = top;
 	m_rect.left = left;
@@ -46,9 +52,7 @@ void uiwindow::got_focus() {
 	uicontrol::got_focus();
 
 	if (m_focused_control == NULL)
-		m_focused_control = this->get_first_child();
-
-	m_focused_control->got_focus();
+		this->focus_next_control();
 }
 
 void uiwindow::lose_focus() {
@@ -59,13 +63,14 @@ void uiwindow::lose_focus() {
 }
 
 void uiwindow::focus_next_control() {
-	if (m_focused_control != NULL)
+	if (m_focused_control != NULL) {
 		m_focused_control->lose_focus();
 
-	do {
-		m_focused_control = m_focused_control->get_next();
-	} while (m_focused_control != NULL &&
-			 m_focused_control->is_focusable() == FALSE);
+		do {
+			m_focused_control = m_focused_control->get_next();
+		} while (m_focused_control != NULL &&
+				 m_focused_control->is_focusable() == FALSE);
+	}
 
 	if (m_focused_control == NULL) {
 		m_focused_control = this->get_first_child();

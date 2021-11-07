@@ -9,7 +9,9 @@ class uiwindow : public uicontrol {
 public:
 	enum style {
 		CAPTIONED = 0x01,
-		FRAMED = 0x02
+		FRAMED = 0x02,
+
+		CENTERED = 0x10
 	};
 
 	/** Window constructor.
@@ -33,10 +35,10 @@ public:
 	void got_focus();
 	void lose_focus();
 
-	/** Focus next or first contained control. */
+	/** Focus next or first focusable contained control. */
 	void focus_next_control();
 
-	/** Focus previous contained control. */
+	/** Focus previous focusable contained control. */
 	void focus_previous_control();
 
 	/** Focus specific control.
