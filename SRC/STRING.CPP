@@ -37,6 +37,15 @@ bool_t string::is_empty(const char *str) {
 	return (*ptr == NULL) ? TRUE : FALSE;
 }
 
+int string::icase_index_of(const char *str, char search) {
+	char search_str[2] = { search, NULL };
+	const char *ptr = string::icase_match(str, search_str);
+	if (ptr == NULL)
+		return -1;
+
+	return (int)(ptr - str);
+}
+
 char *string::icase_match(const char *str, const char *search) {
 	const char *source = str;
 	const char *search_ptr = search;

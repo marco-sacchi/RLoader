@@ -45,6 +45,14 @@ public:
 	 * @return TRUE if string is made only of whitespace characters.
 	 */
 	static bool_t is_empty(const char *str);
+	/** Find index of first occurence of searched characted.
+	 *
+	 * @param str String to search in.
+	 * @param search Character to search.
+	 *
+	 * @return Index of first occurence, -1 if not found.
+	 */
+	static int icase_index_of(const char *str, char search);
 	/** Test for substring match case-insensitively.
 	 *
 	 * @param str String to search in.
