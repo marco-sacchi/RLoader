@@ -86,6 +86,12 @@ public:
 	 */
 	bool_t is_focusable() { return m_focusable; }
 
+	/** Get paint rect in local coordinate respect to the parent.
+	 *
+	 * @param rect Buffer filled with vga::text_rect_t structure.
+	 */
+	void get_rect(vga::text_rect_t *rect);
+
 	/** Get parent control.
 	 *
 	 * @return Parent control pointer, NULL if not defined.

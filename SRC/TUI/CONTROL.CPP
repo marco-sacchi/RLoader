@@ -101,6 +101,10 @@ void uicontrol::update_transparency_attrs() {
 	m_blank_attrs = vga::encode_attrs(back_color, back_color, 0);
 }
 
+void uicontrol::get_rect(vga::text_rect_t *rect) {
+	memcpy(rect, &m_rect, sizeof(vga::text_rect_t));
+}
+
 uicontrol *uicontrol::get_last_child() {
 	uicontrol *children = m_first_child;
 	while (children->m_next != NULL)

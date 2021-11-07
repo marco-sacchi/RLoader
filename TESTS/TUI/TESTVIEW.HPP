@@ -3,6 +3,7 @@
 
 #include "tui/view.hpp"
 #include "tui/window.hpp"
+#include "tui/msgbox.hpp"
 #include "tui/button.hpp"
 #include "tui/label.hpp"
 #include "tui/editbox.hpp"
@@ -23,15 +24,18 @@ private:
 		ID_WINDOW = 1,
 		ID_BUTTON_OPEN,
 		ID_BUTTON_CLOSE,
+		ID_BUTTON_MSGBOX,
 		ID_LABEL,
 		ID_EDIT,
 		ID_LIST
 	};
 
+	uimsgbox *create_messagebox();
+
 	int m_top, m_left;
 	int m_width, m_height;
 
-	uibutton *m_button1, *m_button2;
+	uibutton *m_button1, *m_button2, *m_button3;
 	uilabel *m_label;
 	uieditbox *m_edit;
 	uilistbox *m_list;

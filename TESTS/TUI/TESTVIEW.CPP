@@ -1,6 +1,7 @@
 #include <string.h>
 
 #include "tui/testview.hpp"
+#include "tui/msgbox.hpp"
 
 static const char *list_items[] = {
 	"Item 0",
@@ -41,6 +42,13 @@ bool_t testview::init_controls() {
 
 	m_button2->set_accelerator('V');
 	m_window->add_control(m_button2);
+
+	m_button3 = new uibutton(ID_BUTTON_MSGBOX, 5, 35, 13, "Message box");
+	if (m_button3 == NULL)
+		return FALSE;
+
+	m_button3->set_accelerator('M');
+	m_window->add_control(m_button3);
 
 	m_label = new uilabel(ID_LABEL, 7, 8, "Label text:");
 	if (m_label == NULL)
@@ -84,6 +92,32 @@ bool_t testview::get_list_item(int *index, const char **text) {
 	return (*index < 0) ? FALSE : TRUE;
 }
 
+uimsgbox *testview::create_messagebox() {
+	uimsgbox *msgbox = new uimsgbox("Message caption",
+									"Long message text to test word-wrapping,"
+									"correct line counting window sizing and "
+									"buttons rendering.");
+	if (msgbox == NULL)
+		return NULL;
+
+	if (!msgbox->add_button(uimsgbox::BTN_OK)) {
+		delete msgbox;
+		return NULL;
+	}
+
+	if (!msgbox->add_button(uimsgbox::BTN_CANCEL)) {
+		delete msgbox;
+		return NULL;
+	}
+
+	if (!msgbox->add_button(uimsgbox::BTN_CUSTOM_FIRST, "Custom", 'S')) {
+		delete msgbox;
+		return NULL;
+	}
+
+	return msgbox;
+}
+
 bool_t testview::on_action(tui::action_t *action) {
 	tui::message_t msg;
 	switch (action->type) {
@@ -109,7 +143,7 @@ bool_t testview::on_action(tui::action_t *action) {
 			switch (action->id) {
 				case ID_BUTTON_OPEN:
 					if (action->type == tui::TUIA_CTRL_CLICK) {
-						m_dialog = new testview(5, 16, 48, 16);
+						m_dialog = new testview(5, 16, 50, 16);
 						if (m_dialog != NULL) {
 							msg.type = tui::TUIM_OPEN_VIEW;
 							msg.data = m_dialog;
@@ -123,6 +157,17 @@ bool_t testview::on_action(tui::action_t *action) {
 						msg.type = tui::TUIM_CLOSE_VIEW;
 						msg.data = this;
 						this->queue_message(&msg);
+					}
+					break;
+
+				case ID_BUTTON_MSGBOX:
+					if (action->type == tui::TUIA_CTRL_CLICK) {
+						uimsgbox *msgbox = this->create_messagebox();
+						if (msgbox != NULL) {
+							msg.type = tui::TUIM_OPEN_VIEW;
+							msg.data = msgbox;
+							this->queue_message(&msg);
+						}
 					}
 					break;
 			}
