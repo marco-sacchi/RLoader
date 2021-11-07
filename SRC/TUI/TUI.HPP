@@ -46,17 +46,6 @@ public:
 		/** Control item activated by ENTER key. */
 		TUIA_ITEM_ACTIVATED
 	};
-	/** View return codes enumeration. */
-	enum return_codes {
-		RC_NONE,
-		RC_OK,
-		RC_CANCEL,
-		RC_ABORT,
-		RC_RETRY,
-		RC_IGNORE,
-		RC_YES,
-		RC_NO
-	};
 
 	/** Message sent from low-level code to controls. */
 	typedef struct {

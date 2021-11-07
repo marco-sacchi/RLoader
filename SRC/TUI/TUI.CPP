@@ -44,7 +44,8 @@ bool_t tui::task() {
 	action_t action;
 	memset(&action, 0x00, sizeof(tui::action_t));
 
-	if (this->keyb_data.type == keyboard::KEV_MAKE &&
+	if (m_curr_view->is_modal() == FALSE &&
+		this->keyb_data.type == keyboard::KEV_MAKE &&
 		this->keyb_data.virt_key == VK_F3 &&
 		((this->keyb_data.shifts & VS_ALT) &&
 		((this->keyb_data.shifts & ~VS_ALT) == 0))) {

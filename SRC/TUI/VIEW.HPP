@@ -17,7 +17,7 @@ public:
 		STATE_OPENED,
 		/** View is closed but not deallocated. */
 		STATE_CLOSED,
-        /** View, linked window and all descendant control are deallocated. */
+		/** View, linked window and all descendant control are deallocated. */
 		STATE_DESTROYED
 	};
 
@@ -29,6 +29,12 @@ public:
 	 * @return View state.
 	 */
 	state get_state() { return m_state; }
+
+	/** Modal view flag status.
+	 *
+	 * @return True if view is modal, false otherwise.
+	 */
+	bool_t is_modal() { return m_is_modal; }
 
 	/** Get window control linked to this view.
 	 *
@@ -89,6 +95,8 @@ public:
 protected:
 	/** View state. */
 	state m_state;
+	/** Modal view flag. */
+	bool_t m_is_modal;
 	/** Window linked to this view. */
 	uiwindow *m_window;
 	/** Previous view. */

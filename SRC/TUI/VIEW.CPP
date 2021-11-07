@@ -6,6 +6,8 @@
 #define MAX_QUEUE_SIZE 8
 
 uiview::uiview() {
+	m_is_modal = FALSE;
+
 	m_window = NULL;
 	m_state = STATE_INITIALIZING;
 	m_previous = NULL;
