@@ -33,8 +33,11 @@ uiwindow::uiwindow(uint16_t id, int top, int left, int width, int height,
 	m_rect.bottom = top + height - 1;
 	m_focused_control = NULL;
 
-	this->set_fore_color(7);
-	this->set_back_color(0);
+	this->set_fore_color(uitheme::window::fore);
+	this->set_back_color(uitheme::window::back);
+
+	m_caption_attrs = vga::encode_attrs(uitheme::window::caption_back,
+										uitheme::window::caption_fore, 0);
 }
 
 uiwindow::~uiwindow() {
@@ -155,8 +158,7 @@ void uiwindow::repaint() {
 						  vga::USE_ATTRS_UPDATE_CURSOR);
 
 		if (!(m_style & uiwindow::FRAMED))
-			uigraph::draw_active_item(rect.top, rect.left,
-									  m_paint_attrs, rect_width);
+			vga::write_attrs(rect.top, rect.left, m_caption_attrs, rect_width);
 	}
 
 	// Repaint descendants.

@@ -17,8 +17,7 @@ uilabel::uilabel(uint16_t id, int top, int left, const char *text)
 	m_rect.left = left;
 	m_rect.right = left + text_length - 1;
 
-	// DEBUG: temp debug values.
-	this->set_fore_color(7);
+	this->set_fore_color(uitheme::label::fore);
 	this->set_back_color(0);
 
 	// Label is transparent by default.
@@ -57,8 +56,7 @@ uilabel::uilabel(uint16_t id, int top, int left, int width, int height,
 	if (height == 0)
 		m_rect.bottom += m_lines_count - 1;
 
-	// DEBUG: temp debug values.
-	this->set_fore_color(7);
+	this->set_fore_color(uitheme::label::fore);
 	this->set_back_color(0);
 
 	// Label is transparent by default.

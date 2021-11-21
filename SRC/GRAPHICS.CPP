@@ -285,7 +285,7 @@ void graphics::draw_scroll_bar(vga::text_rect_t *rect, uint8_t attrs,
 	if (count == 0) {
 		for (int i = 0; i < height; ++i) {
 			vga::set_cursor_pos(rect->top + i, scroll_column);
-			vga::write_char(0xdb, attrs, 1);
+			vga::write_char(0xb2, attrs, 1);
 		}
 
 		return;
@@ -301,7 +301,7 @@ void graphics::draw_scroll_bar(vga::text_rect_t *rect, uint8_t attrs,
 		if (i == thumb_start) {
 			while (i <= thumb_end && i < height) {
 				vga::set_cursor_pos(rect->top + i++, scroll_column);
-				vga::write_char(0xdb, attrs, 1);
+				vga::write_char(0xb2, attrs, 1);
 			}
 
 			if (i == height)

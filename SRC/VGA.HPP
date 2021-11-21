@@ -231,8 +231,14 @@ public:
 	 * @param fore_color Decoded foreground color.
 	 * @param blink Decoded blinking text bit.
 	 */
-	static void vga::decode_attrs(uint8_t attrs, uint8_t *back_color,
-								  uint8_t *fore_color, uint8_t *blink);
+	static void decode_attrs(uint8_t attrs, uint8_t *back_color,
+							 uint8_t *fore_color, uint8_t *blink);
+	/** Swap foreground and background colors in character attributes.
+	 *
+	 * @param attrs Attributes byte for which swap colors.
+	 * @return New attributes value with swapped colors.
+	 */
+	static uint8_t swap_attrs(uint8_t attrs);
 
 	/** Scroll rectangle up using BIOS.
 	 *

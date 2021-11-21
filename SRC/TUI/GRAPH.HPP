@@ -2,6 +2,7 @@
 #define TUI_GRAPH_HPP
 
 #include "graphics.hpp"
+#include "tui/theme.hpp"
 
 /** Utility methods to abstract graphics/text-mode UI elements drawing. */
 class uigraph {
@@ -39,16 +40,6 @@ public:
 	static void highlight_chars(uint8_t row, uint8_t col, uint8_t attrs,
 								uint16_t count);
 
-	/** Apply active style to an item.
-	 *
-	 * @param row Zero-based text row.
-	 * @param col Zero-based text column.
-	 * @param attrs Painting color attributes.
-	 * @param count Item width as characters count.
-	 */
-	static void draw_active_item(uint8_t row, uint8_t col, uint8_t attrs,
-								 uint8_t count);
-
 	/** Reverse item colors.
 	 *
 	 * @param row Zero-based text row.
@@ -59,23 +50,50 @@ public:
 	static void reverse_item(uint8_t row, uint8_t col, uint8_t attrs,
 							 uint16_t count);
 
+	/** Apply focus style to an item.
+	 *
+	 * @param row Zero-based text row.
+	 * @param col Zero-based text column.
+	 * @param attrs Painting color attributes.
+	 * @param count Item width as characters count.
+	 */
+	static void apply_focus(uint8_t row, uint8_t col, uint8_t attrs,
+							uint8_t count);
+
 	/** Apply focus style to specified rect.
 	 *
 	 * @param rect Rect for which apply style.
-	 * @param attr Painting color attributes of control.
+	 * @param attrs Painting color attributes of control.
 	 * @param style Focus style.
 	 */
-	static void apply_focus(vga::text_rect_t *rect, uint8_t attr,
+	static void apply_focus(vga::text_rect_t *rect, uint8_t attrs,
 							focus_style style);
+
 	/** Remove applied focus style to specified rect.
 	 *
 	 * @param rect Rect for which apply style.
-	 * @param attr Painting color attributes of control.
+	 * @param attrs Painting color attributes of control.
 	 * @param style Previously specified focus style.
 	 */
-	static void remove_focus(vga::text_rect_t *rect, uint8_t attr,
+	static void remove_focus(vga::text_rect_t *rect, uint8_t attrs,
 							 focus_style style);
 
+	/** Apply active style to an item.
+	 *
+	 * @param row Zero-based text row.
+	 * @param col Zero-based text column.
+	 * @param attrs Painting color attributes.
+	 * @param count Item width as characters count.
+	 */
+	static void apply_active(uint8_t row, uint8_t col, uint8_t attrs,
+							 uint8_t count);
+
+	/** Apply active style to specified rect.
+	 *
+	 * @param rect Rect for which apply style.
+	 * @param attr Painting color attributes of control.
+	 */
+	static void apply_active(vga::text_rect_t *rect, uint8_t attr);
 };
 
 #endif

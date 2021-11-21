@@ -40,6 +40,8 @@ bool_t testview::init_controls() {
 	if (m_button2 == NULL)
 		return FALSE;
 
+	m_button2->set_fore_color(0x0c);
+	m_button2->set_back_color(4);
 	m_button2->set_accelerator('V');
 	m_window->add_control(m_button2);
 
@@ -47,6 +49,8 @@ bool_t testview::init_controls() {
 	if (m_button3 == NULL)
 		return FALSE;
 
+	m_button3->set_fore_color(0x0a);
+	m_button3->set_back_color(2);
 	m_button3->set_accelerator('M');
 	m_window->add_control(m_button3);
 

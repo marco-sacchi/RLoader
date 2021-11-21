@@ -67,6 +67,8 @@ private:
 	style m_style;
 	/** Window caption. */
 	char *m_caption;
+	/** Window caption text attributes. */
+	uint8_t m_caption_attrs;
 	/** Currently focused control. */
 	uicontrol *m_focused_control;
 };

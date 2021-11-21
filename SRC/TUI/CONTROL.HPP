@@ -67,6 +67,28 @@ public:
 	 * @param color Color index.
 	 */
 	void set_back_color(uint8_t color);
+
+	/** Get control selected text/foreground color.
+	 *
+	 * @return Color index.
+	 */
+	uint8_t get_selected_fore_color();
+	/** Set control selected text/foreground color.
+	 *
+	 * @param color Color index.
+	 */
+	void set_selected_fore_color(uint8_t color);
+	/** Get control selected background color.
+	 *
+	 * @return Color index.
+	 */
+	uint8_t get_selected_back_color();
+	/** Set control selected background color.
+	 *
+	 * @param color Color index.
+	 */
+	void set_selected_back_color(uint8_t color);
+
 	/** Get transparency flag.
 	 *
 	 * @return TRUE if transparency is enabled, false otherwise.
@@ -77,6 +99,7 @@ public:
 	 * @param enabled TRUE to enable transparency, false otherwise.
 	 */
 	void set_transparency(bool_t enabled);
+
 	/** Recompute painting color attributes when transparency is enabled. */
 	void update_transparency_attrs();
 
@@ -206,6 +229,10 @@ protected:
 	uint8_t m_paint_attrs;
 	/** Control blank characters attributes. */
 	uint8_t m_blank_attrs;
+	/** Selection foreground and background colors paint attributes. */
+	uint8_t m_selected_attrs;
+	/** Scrollbars foreground and background colors paint attributes. */
+	uint8_t m_scroll_bar_attrs;
 	/** Transparency flag.
 	 *
 	 * When true this control inherits background color from first ancestor

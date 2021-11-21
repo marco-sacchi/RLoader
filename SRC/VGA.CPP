@@ -169,6 +169,10 @@ void vga::decode_attrs(uint8_t attrs, uint8_t *back_color,
 	*blink = (attrs >> 7);
 }
 
+uint8_t vga::swap_attrs(uint8_t attrs) {
+	return (attrs >> 4) | ((attrs & 0x0f) << 4);
+}
+
 void vga::scroll_page_up(uint8_t rows, uint8_t attrs,
 						 const vga::text_rect_t *rect) {
 	union REGS regs;

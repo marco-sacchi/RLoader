@@ -21,9 +21,11 @@ uieditbox::uieditbox(uint16_t id, int top, int left, uint16_t width,
 	m_selection_pos = 0;
 	m_selected = FALSE;
 
-	// DEBUG: temp debug values.
-	this->set_fore_color(7);
-	this->set_back_color(1);
+	this->set_fore_color(uitheme::editbox::fore);
+	this->set_back_color(uitheme::editbox::back);
+
+	this->set_selected_fore_color(uitheme::editbox::selected_fore);
+	this->set_selected_back_color(uitheme::editbox::selected_back);
 }
 
 uieditbox::~uieditbox() {
@@ -105,8 +107,6 @@ void uieditbox::repaint() {
 
 	if (m_focused == TRUE)
 		uigraph::apply_focus(&rect, m_paint_attrs, uigraph::FOCUS_SURFACE);
-	else
-		uigraph::remove_focus(&rect, m_paint_attrs, uigraph::FOCUS_SURFACE);
 
 	uicontrol::repaint();
 }

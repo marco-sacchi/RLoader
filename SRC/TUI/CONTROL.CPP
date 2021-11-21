@@ -1,5 +1,6 @@
 #include <mem.h>
 
+#include "tui/theme.hpp"
 #include "tui/control.hpp"
 #include "tui/view.hpp"
 
@@ -13,6 +14,9 @@ uicontrol::uicontrol(uint16_t id) {
 	memset(&m_rect, 0x00, sizeof(vga::text_rect_t));
 	m_parent = m_previous = m_next = m_first_child = NULL;
 	m_view = NULL;
+
+	m_scroll_bar_attrs = vga::encode_attrs(uitheme::scroll_bar::back,
+										   uitheme::scroll_bar::fore, 0);
 }
 
 uicontrol::~uicontrol() {
@@ -68,6 +72,34 @@ void uicontrol::set_back_color(uint8_t color) {
 	vga::decode_attrs(m_paint_attrs, &back_color, &fore_color, &blink);
 	m_paint_attrs = vga::encode_attrs(color, fore_color, 0);
 	m_blank_attrs = vga::encode_attrs(color, color, 0);
+
+	this->repaint();
+}
+
+uint8_t uicontrol::get_selected_fore_color() {
+	uint8_t back_color, fore_color, blink;
+	vga::decode_attrs(m_selected_attrs, &back_color, &fore_color, &blink);
+	return fore_color;
+}
+
+void uicontrol::set_selected_fore_color(uint8_t color) {
+	uint8_t back_color, fore_color, blink;
+	vga::decode_attrs(m_selected_attrs, &back_color, &fore_color, &blink);
+	m_selected_attrs = vga::encode_attrs(back_color, color, 0);
+
+	this->repaint();
+}
+
+uint8_t uicontrol::get_selected_back_color() {
+	uint8_t back_color, fore_color, blink;
+	vga::decode_attrs(m_selected_attrs, &back_color, &fore_color, &blink);
+	return back_color;
+}
+
+void uicontrol::set_selected_back_color(uint8_t color) {
+	uint8_t back_color, fore_color, blink;
+	vga::decode_attrs(m_selected_attrs, &back_color, &fore_color, &blink);
+	m_selected_attrs = vga::encode_attrs(color, fore_color, 0);
 
 	this->repaint();
 }

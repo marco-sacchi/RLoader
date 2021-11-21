@@ -35,9 +35,11 @@ uilistbox::uilistbox(uint16_t id, int top, int left, int width, int height)
 
 	memset(m_highlight_string, 0x00, (m_highlight_maxlen + 1));
 
-	// DEBUG: temp debug values.
-	this->set_fore_color(7);
-	this->set_back_color(1);
+	this->set_fore_color(uitheme::listbox::fore);
+	this->set_back_color(uitheme::listbox::back);
+
+	this->set_selected_fore_color(uitheme::listbox::selected_fore);
+	this->set_selected_back_color(uitheme::listbox::selected_back);
 }
 
 uilistbox::~uilistbox() {
@@ -236,7 +238,7 @@ void uilistbox::calc_list_rect(vga::text_rect_t *rect) {
 }
 
 void uilistbox::repaint_scroll_bar(vga::text_rect_t *rect) {
-	graphics::draw_scroll_bar(rect, m_paint_attrs,
+	graphics::draw_scroll_bar(rect, m_scroll_bar_attrs,
 							  m_items_count, m_offset);
 }
 
@@ -258,6 +260,17 @@ void uilistbox::repaint_item(int index, vga::text_rect_t *rect) {
 	int pad_size = rect->right - rect->left + 1 - strlen(buffer);
 	vga::write_char(' ', m_paint_attrs, pad_size);
 
+	uint8_t item_attrs = m_paint_attrs;
+
+	if (tui::text_mode == TRUE && index == m_selected_item) {
+		item_attrs = m_selected_attrs;
+		if (m_focused != TRUE)
+			item_attrs = vga::swap_attrs(item_attrs);
+
+		uigraph::apply_focus(rect->top + line, rect->left,
+							 item_attrs, max_length);
+	}
+
 	int highlight_len = strlen(m_highlight_string);
 	if (highlight_len > 0) {
 		const char *matches[TUI_ITEM_MAXLEN];
@@ -265,15 +278,17 @@ void uilistbox::repaint_item(int index, vga::text_rect_t *rect) {
 												  matches);
 		if (match_count > 0) {
 			for (int i = 0; i < match_count; ++i)
-				uigraph::highlight_chars(rect->top + line,
-							   rect->left + matches[i] - buffer,
-							   m_paint_attrs, highlight_len);
+				if (index == m_selected_item)
+					uigraph::highlight_chars(rect->top + line,
+											 rect->left + matches[i] - buffer,
+											 item_attrs ^ 0x88,
+											 highlight_len);
+				else
+					uigraph::highlight_chars(rect->top + line,
+											 rect->left + matches[i] - buffer,
+											 item_attrs, highlight_len);
 		}
 	}
-
-	if (index == m_selected_item)
-		uigraph::draw_active_item(rect->top + line, rect->left,
-								  m_paint_attrs, max_length);
 }
 
 void uilistbox::repaint() {
