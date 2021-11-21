@@ -93,6 +93,24 @@ public:
 	bool_t dequeue_message(tui::message_t *dest);
 
 protected:
+	/** Queue message to open specified view.
+	 *
+	 * @param view View to open.
+	 * @return TRUE on queue success, FALSE if queue is full.
+	 */
+	bool_t queue_open_view(uiview *view);
+	/** Queue message to close this view.
+	 *
+	 * @return TRUE on queue success, FALSE if queue is full.
+	 */
+	bool_t queue_close_view();
+	/** Queue message to close specified view.
+	 *
+	 * @param view View to close.
+	 * @return TRUE on queue success, FALSE if queue is full.
+	 */
+	bool_t queue_close_view(uiview *view);
+
 	/** View state. */
 	state m_state;
 	/** Modal view flag. */

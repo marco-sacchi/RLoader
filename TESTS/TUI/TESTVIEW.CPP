@@ -98,9 +98,9 @@ bool_t testview::get_list_item(int *index, const char **text) {
 
 uimsgbox *testview::create_messagebox() {
 	uimsgbox *msgbox = new uimsgbox("Message caption",
-									"Long message text to test word-wrapping,"
-									"correct line counting window sizing and "
-									"buttons rendering.");
+									"Long message text to test "
+									"word-wrapping, correct line counting, "
+									"window sizing and buttons rendering.");
 	if (msgbox == NULL)
 		return NULL;
 
@@ -123,7 +123,6 @@ uimsgbox *testview::create_messagebox() {
 }
 
 bool_t testview::on_action(tui::action_t *action) {
-	tui::message_t msg;
 	switch (action->type) {
 		case tui::TUIA_CTRL_DESTROY:
 			if (action->id == ID_WINDOW)
@@ -139,6 +138,7 @@ bool_t testview::on_action(tui::action_t *action) {
 					m_list->set_selected_item(item_index);
 
 				m_edit->set_text(field_text);
+				m_dialog = NULL;
 			}
 
 			break;
@@ -148,33 +148,29 @@ bool_t testview::on_action(tui::action_t *action) {
 				case ID_BUTTON_OPEN:
 					if (action->type == tui::TUIA_CTRL_CLICK) {
 						m_dialog = new testview(5, 16, 50, 16);
-						if (m_dialog != NULL) {
-							msg.type = tui::TUIM_OPEN_VIEW;
-							msg.data = m_dialog;
-							this->queue_message(&msg);
-						}
+						if (m_dialog != NULL)
+							this->queue_open_view(m_dialog);
 					}
 					break;
 
 				case ID_BUTTON_CLOSE:
-					if (action->type == tui::TUIA_CTRL_CLICK) {
-						msg.type = tui::TUIM_CLOSE_VIEW;
-						msg.data = this;
-						this->queue_message(&msg);
-					}
+					if (action->type == tui::TUIA_CTRL_CLICK)
+						this->queue_close_view();
 					break;
 
 				case ID_BUTTON_MSGBOX:
 					if (action->type == tui::TUIA_CTRL_CLICK) {
 						uimsgbox *msgbox = this->create_messagebox();
-						if (msgbox != NULL) {
-							msg.type = tui::TUIM_OPEN_VIEW;
-							msg.data = msgbox;
-							this->queue_message(&msg);
-						}
+						if (msgbox != NULL)
+							this->queue_open_view(msgbox);
 					}
 					break;
 			}
+			break;
+
+		case tui::TUIA_CTRL_VALUE_CHANGED:
+			if (action->id == ID_EDIT)
+				m_list->set_highlight(m_edit->get_text());
 			break;
 	}
 

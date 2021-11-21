@@ -138,7 +138,6 @@ bool_t uimsgbox::init_controls() {
 }
 
 bool_t uimsgbox::on_action(tui::action_t *action) {
-	tui::message_t msg;
 	switch (action->type) {
 		case tui::TUIA_CTRL_DESTROY:
 			if (action->id == ID_WINDOW)
@@ -148,9 +147,7 @@ bool_t uimsgbox::on_action(tui::action_t *action) {
 		case tui::TUIA_CTRL_CLICK:
 			if (action->type == tui::TUIA_CTRL_CLICK) {
 				m_selected_button_id = action->id;
-				msg.type = tui::TUIM_CLOSE_VIEW;
-				msg.data = this;
-				this->queue_message(&msg);
+				this->queue_close_view();
 			}
 			break;
 	}

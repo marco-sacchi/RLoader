@@ -32,6 +32,9 @@ uiview::~uiview() {
 }
 
 bool_t uiview::open(uiview *previous) {
+	if (m_state != STATE_INITIALIZING)
+		return FALSE;
+
 	if (this->init_controls() == FALSE)
 		return FALSE;
 
@@ -95,4 +98,22 @@ bool_t uiview::dequeue_message(tui::message_t *dest) {
 				sizeof(tui::message_t) * m_message_queue_count);
 
 	return TRUE;
+}
+
+bool_t uiview::queue_open_view(uiview *view) {
+	tui::message_t msg;
+	msg.type = tui::TUIM_OPEN_VIEW;
+	msg.data = view;
+	return this->queue_message(&msg);
+}
+
+bool_t uiview::queue_close_view() {
+	return this->queue_close_view(this);
+}
+
+bool_t uiview::queue_close_view(uiview *view) {
+	tui::message_t msg;
+	msg.type = tui::TUIM_CLOSE_VIEW;
+	msg.data = view;
+	return this->queue_message(&msg);
 }
