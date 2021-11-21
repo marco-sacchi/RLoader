@@ -2,6 +2,7 @@
 
 #include "tui/editbox.hpp"
 #include "tui/graph.hpp"
+#include "string.hpp"
 #include "math.hpp"
 
 uieditbox::uieditbox(uint16_t id, int top, int left, uint16_t width,
@@ -142,17 +143,36 @@ void uieditbox::on_message(tui::message_t *msg, tui::action_t *action) {
 				break;
 
 			case VK_LEFT:
-				// TODO: check for CTRL pressed to move by words
-				// instead of chars.
-				if (m_caret_pos > 0)
-					--m_caret_pos;
+				if (data->shifts & VS_CTRL) {
+					if (m_caret_pos > 0)
+						--m_caret_pos;
+
+					while ((m_caret_pos > 0) &&
+						   string::is_white_space(*(m_text + m_caret_pos)))
+						--m_caret_pos;
+
+					while ((m_caret_pos > 0) &&
+						   !string::is_white_space(*(m_text + (m_caret_pos - 1))))
+						--m_caret_pos;
+				} else {
+					if (m_caret_pos > 0)
+						--m_caret_pos;
+				}
 				break;
 
 			case VK_RIGHT:
-				// TODO: check for CTRL pressed to move by words
-				// instead of chars.
-				if (m_caret_pos < text_length)
-					++m_caret_pos;
+				if (data->shifts & VS_CTRL) {
+					while ((m_caret_pos < text_length) &&
+						   !string::is_white_space(*(m_text + m_caret_pos)))
+						++m_caret_pos;
+
+					while ((m_caret_pos < text_length) &&
+						   string::is_white_space(*(m_text + m_caret_pos)))
+						++m_caret_pos;
+				} else {
+					if (m_caret_pos < text_length)
+						++m_caret_pos;
+				}
 				break;
 
 			case VK_BKSPC:
