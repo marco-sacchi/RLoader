@@ -39,6 +39,8 @@ public:
 		static uint8_t caption_fore;
 		static uint8_t caption_back;
 	};
+
+	static void init(bool_t text_mode);
 };
 
 #endif
