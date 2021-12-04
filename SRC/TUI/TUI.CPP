@@ -2,6 +2,7 @@
 
 #include "vga.hpp"
 #include "tui/tui.hpp"
+#include "tui/theme.hpp"
 #include "tui/view.hpp"
 #include "tui/window.hpp"
 
@@ -10,6 +11,8 @@ bool_t tui::text_mode;
 tui::tui(bool_t text_mode) {
 	m_curr_view = NULL;
 	tui::text_mode = text_mode;
+
+	uitheme::init(text_mode);
 
 	vga::set_blinking(FALSE);
 	vga::enable_cursor(FALSE);

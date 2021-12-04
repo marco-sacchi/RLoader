@@ -35,11 +35,11 @@ uilistbox::uilistbox(uint16_t id, int top, int left, int width, int height)
 
 	memset(m_highlight_string, 0x00, (m_highlight_maxlen + 1));
 
-	this->set_fore_color(uitheme::listbox::fore);
-	this->set_back_color(uitheme::listbox::back);
+	this->set_back_color_internal(uitheme::listbox::back);
+	this->set_fore_color_internal(uitheme::listbox::fore);
 
-	this->set_selected_fore_color(uitheme::listbox::selected_fore);
-	this->set_selected_back_color(uitheme::listbox::selected_back);
+	this->set_selected_back_color_internal(uitheme::listbox::selected_back);
+	this->set_selected_fore_color_internal(uitheme::listbox::selected_fore);
 }
 
 uilistbox::~uilistbox() {

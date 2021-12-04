@@ -22,11 +22,11 @@ uieditbox::uieditbox(uint16_t id, int top, int left, uint16_t width,
 	m_selection_pos = 0;
 	m_selected = FALSE;
 
-	this->set_fore_color(uitheme::editbox::fore);
-	this->set_back_color(uitheme::editbox::back);
+	this->set_back_color_internal(uitheme::editbox::back);
+	this->set_fore_color_internal(uitheme::editbox::fore);
 
-	this->set_selected_fore_color(uitheme::editbox::selected_fore);
-	this->set_selected_back_color(uitheme::editbox::selected_back);
+	this->set_selected_back_color_internal(uitheme::editbox::selected_back);
+	this->set_selected_fore_color_internal(uitheme::editbox::selected_fore);
 }
 
 uieditbox::~uieditbox() {

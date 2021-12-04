@@ -17,8 +17,7 @@ uilabel::uilabel(uint16_t id, int top, int left, const char *text)
 	m_rect.left = left;
 	m_rect.right = left + text_length - 1;
 
-	this->set_fore_color(uitheme::label::fore);
-	this->set_back_color(0);
+	this->set_fore_color_internal(uitheme::label::fore);
 
 	// Label is transparent by default.
 	m_transparent = TRUE;
@@ -56,13 +55,11 @@ uilabel::uilabel(uint16_t id, int top, int left, int width, int height,
 	if (height == 0)
 		m_rect.bottom += m_lines_count - 1;
 
-	this->set_fore_color(uitheme::label::fore);
-	this->set_back_color(0);
+	m_paint_attrs = vga::encode_attrs(0, uitheme::label::fore, 0);
 
 	// Label is transparent by default.
 	m_transparent = TRUE;
 }
-
 
 uilabel::~uilabel() {
 	if (m_lines != NULL)
@@ -125,7 +122,6 @@ void uilabel::repaint() {
 			accel_index = string::icase_index_of(m_text, m_accelerator);
 	} else {
 		// Non-autosized mode.
-
 		int row = rect.top;
 		for (int i = 0; i < m_lines_count; ++i, ++row) {
 			vga::set_cursor_pos(row, rect.left);

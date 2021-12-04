@@ -33,11 +33,11 @@ uiwindow::uiwindow(uint16_t id, int top, int left, int width, int height,
 	m_rect.bottom = top + height - 1;
 	m_focused_control = NULL;
 
-	this->set_fore_color(uitheme::window::fore);
-	this->set_back_color(uitheme::window::back);
+	this->set_back_color_internal(uitheme::window::back);
+	this->set_fore_color_internal(uitheme::window::fore);
 
-	m_caption_attrs = vga::encode_attrs(uitheme::window::caption_back,
-										uitheme::window::caption_fore, 0);
+	this->set_caption_back_color_internal(uitheme::window::caption_back);
+	this->set_caption_fore_color_internal(uitheme::window::caption_fore);
 }
 
 uiwindow::~uiwindow() {
@@ -134,6 +134,48 @@ uicontrol *uiwindow::get_control_by_accelerator(char accelerator) {
 	return NULL;
 }
 
+uint8_t uiwindow::get_caption_fore_color() {
+	uint8_t back_color, fore_color, blink;
+	vga::decode_attrs(m_caption_attrs, &back_color, &fore_color, &blink);
+	return fore_color;
+}
+
+void uiwindow::set_caption_fore_color(uint8_t color) {
+	// Cannot change color on 1-bit graphics UI.
+	if (tui::text_mode == FALSE)
+		return;
+
+	this->set_caption_fore_color_internal(color);
+	this->repaint();
+}
+
+void uiwindow::set_caption_fore_color_internal(uint8_t color) {
+	uint8_t back_color, fore_color, blink;
+	vga::decode_attrs(m_caption_attrs, &back_color, &fore_color, &blink);
+	m_caption_attrs = vga::encode_attrs(back_color, color, 0);
+}
+
+uint8_t uiwindow::get_caption_back_color() {
+	uint8_t back_color, fore_color, blink;
+	vga::decode_attrs(m_caption_attrs, &back_color, &fore_color, &blink);
+	return back_color;
+}
+
+void uiwindow::set_caption_back_color(uint8_t color) {
+	// Cannot change color on 1-bit graphics UI.
+	if (tui::text_mode == FALSE)
+		return;
+
+	this->set_caption_back_color_internal(color);
+	this->repaint();
+}
+
+void uiwindow::set_caption_back_color_internal(uint8_t color) {
+	uint8_t back_color, fore_color, blink;
+	vga::decode_attrs(m_caption_attrs, &back_color, &fore_color, &blink);
+	m_caption_attrs = vga::encode_attrs(color, fore_color, 0);
+}
+
 void uiwindow::repaint() {
 	if (this->can_repaint() == FALSE)
 		return;
@@ -157,8 +199,13 @@ void uiwindow::repaint() {
 		vga::write_string(m_caption, caption_length, m_paint_attrs,
 						  vga::USE_ATTRS_UPDATE_CURSOR);
 
-		if (!(m_style & uiwindow::FRAMED))
-			vga::write_attrs(rect.top, rect.left, m_caption_attrs, rect_width);
+		if (!(m_style & uiwindow::FRAMED)) {
+			if (tui::text_mode == TRUE)
+				vga::write_attrs(rect.top, rect.left, m_caption_attrs,
+								 rect_width);
+			else
+				uigraph::reverse_item(rect.top, rect.left, m_paint_attrs, rect_width);
+		}
 	}
 
 	// Repaint descendants.

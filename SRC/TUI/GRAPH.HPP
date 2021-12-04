@@ -71,6 +71,7 @@ public:
 
 	/** Remove applied focus style to specified rect.
 	 *
+	 * @note Only for graphics UI, no effect on text-mode UI.
 	 * @param rect Rect for which apply style.
 	 * @param attrs Painting color attributes of control.
 	 * @param style Previously specified focus style.

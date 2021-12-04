@@ -47,6 +47,27 @@ public:
 	 */
 	bool_t focus_control(uicontrol *ctrl);
 
+	/** Get window caption text/foreground color.
+	 *
+	 * @return Color index.
+	 */
+	uint8_t get_caption_fore_color();
+	/** Set window caption text/foreground color and repaint control.
+	 *
+	 * @param color Color index.
+	 */
+	void set_caption_fore_color(uint8_t color);
+	/** Get window caption background color.
+	 *
+	 * @return Color index.
+	 */
+	uint8_t get_caption_back_color();
+	/** Set window caption background color and repaint control.
+	 *
+	 * @param color Color index.
+	 */
+	void set_caption_back_color(uint8_t color);
+
 	virtual void repaint();
 
 	/** Get current focused control.
@@ -61,6 +82,18 @@ public:
 	 * @param First matching control.
 	 */
 	uicontrol *get_control_by_accelerator(char accelerator);
+
+protected:
+	/** Set window caption text/foreground color.
+	 *
+	 * @param color Color index.
+	 */
+	void set_caption_fore_color_internal(uint8_t color);
+	/** Set window caption background color.
+	 *
+	 * @param color Color index.
+	 */
+	void set_caption_back_color_internal(uint8_t color);
 
 private:
 	/** Window style. */

@@ -54,11 +54,18 @@ uint8_t uicontrol::get_fore_color() {
 }
 
 void uicontrol::set_fore_color(uint8_t color) {
+	// Cannot change color on 1-bit graphics UI.
+	if (tui::text_mode == FALSE)
+		return;
+
+	this->set_fore_color_internal(color);
+	this->repaint();
+}
+
+void uicontrol::set_fore_color_internal(uint8_t color) {
 	uint8_t back_color, fore_color, blink;
 	vga::decode_attrs(m_paint_attrs, &back_color, &fore_color, &blink);
 	m_paint_attrs = vga::encode_attrs(back_color, color, 0);
-
-	this->repaint();
 }
 
 uint8_t uicontrol::get_back_color() {
@@ -68,12 +75,19 @@ uint8_t uicontrol::get_back_color() {
 }
 
 void uicontrol::set_back_color(uint8_t color) {
+	// Cannot change color on 1-bit graphics UI.
+	if (tui::text_mode == FALSE)
+		return;
+
+	this->set_back_color_internal(color);
+	this->repaint();
+}
+
+void uicontrol::set_back_color_internal(uint8_t color) {
 	uint8_t back_color, fore_color, blink;
 	vga::decode_attrs(m_paint_attrs, &back_color, &fore_color, &blink);
 	m_paint_attrs = vga::encode_attrs(color, fore_color, 0);
 	m_blank_attrs = vga::encode_attrs(color, color, 0);
-
-	this->repaint();
 }
 
 uint8_t uicontrol::get_selected_fore_color() {
@@ -83,11 +97,18 @@ uint8_t uicontrol::get_selected_fore_color() {
 }
 
 void uicontrol::set_selected_fore_color(uint8_t color) {
+	// Cannot change color on 1-bit graphics UI.
+	if (tui::text_mode == FALSE)
+		return;
+
+	this->set_selected_fore_color_internal(color);
+	this->repaint();
+}
+
+void uicontrol::set_selected_fore_color_internal(uint8_t color) {
 	uint8_t back_color, fore_color, blink;
 	vga::decode_attrs(m_selected_attrs, &back_color, &fore_color, &blink);
 	m_selected_attrs = vga::encode_attrs(back_color, color, 0);
-
-	this->repaint();
 }
 
 uint8_t uicontrol::get_selected_back_color() {
@@ -97,11 +118,18 @@ uint8_t uicontrol::get_selected_back_color() {
 }
 
 void uicontrol::set_selected_back_color(uint8_t color) {
+	// Cannot change color on 1-bit graphics UI.
+	if (tui::text_mode == FALSE)
+		return;
+
+	this->set_selected_back_color_internal(color);
+	this->repaint();
+}
+
+void uicontrol::set_selected_back_color_internal(uint8_t color) {
 	uint8_t back_color, fore_color, blink;
 	vga::decode_attrs(m_selected_attrs, &back_color, &fore_color, &blink);
 	m_selected_attrs = vga::encode_attrs(color, fore_color, 0);
-
-	this->repaint();
 }
 
 bool_t uicontrol::get_transparency() {
@@ -113,7 +141,7 @@ void uicontrol::set_transparency(bool_t enabled) {
 }
 
 void uicontrol::update_transparency_attrs() {
-	if (m_transparent == FALSE)
+	if (tui::text_mode == FALSE || m_transparent == FALSE)
 		return;
 
 	uicontrol *control = this;

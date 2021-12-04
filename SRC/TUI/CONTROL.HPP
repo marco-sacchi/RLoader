@@ -52,7 +52,7 @@ public:
 	 * @return Color index.
 	 */
 	uint8_t get_fore_color();
-	/** Set control text/foreground color.
+	/** Set control text/foreground color and repaint control.
 	 *
 	 * @param color Color index.
 	 */
@@ -62,7 +62,7 @@ public:
 	 * @return Color index.
 	 */
 	uint8_t get_back_color();
-	/** Set control background color.
+	/** Set control background color and repaint control.
 	 *
 	 * @param color Color index.
 	 */
@@ -73,7 +73,7 @@ public:
 	 * @return Color index.
 	 */
 	uint8_t get_selected_fore_color();
-	/** Set control selected text/foreground color.
+	/** Set control selected text/foreground color and repaint control.
 	 *
 	 * @param color Color index.
 	 */
@@ -83,7 +83,7 @@ public:
 	 * @return Color index.
 	 */
 	uint8_t get_selected_back_color();
-	/** Set control selected background color.
+	/** Set control selected background color and repaint control.
 	 *
 	 * @param color Color index.
 	 */
@@ -195,6 +195,27 @@ public:
 	virtual void on_message(tui::message_t *msg, tui::action_t *action) { }
 
 protected:
+	/** Set control text/foreground color.
+	 *
+	 * @param color Color index.
+	 */
+	void set_fore_color_internal(uint8_t color);
+	/** Set control background color.
+	 *
+	 * @param color Color index.
+	 */
+	void set_back_color_internal(uint8_t color);
+	/** Set control selected text/foreground color.
+	 *
+	 * @param color Color index.
+	 */
+	void set_selected_fore_color_internal(uint8_t color);
+	/** Set control selected background color.
+	 *
+	 * @param color Color index.
+	 */
+	void set_selected_back_color_internal(uint8_t color);
+
 	/** Compute parent control rectangle in absolute coordinate system.
 	 *
 	 * @param rect Filled with computed rectangle.

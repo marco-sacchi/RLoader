@@ -95,10 +95,4 @@ void uigraph::remove_focus(vga::text_rect_t *rect, uint8_t attrs,
 		graphics::draw_outline(rect, attrs);
 		return;
 	}
-
-	if (style & FOCUS_SURFACE) {
-		uint16_t count = rect->right - rect->left + 1;
-		for (uint8_t row = rect->top; row <= rect->bottom; ++row)
-			vga::and_attrs(row, rect->left, 0xf7, count);
-	}
 }

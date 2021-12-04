@@ -20,8 +20,8 @@ uibutton::uibutton(uint16_t id, int top, int left, int width,
 	m_rect.left = left;
 	m_rect.right = left + width - 1;
 
-	this->set_fore_color(uitheme::button::fore);
-	this->set_back_color(uitheme::button::back);
+	this->set_back_color_internal(uitheme::button::back);
+	this->set_fore_color_internal(uitheme::button::fore);
 }
 
 uibutton::~uibutton() {
@@ -58,6 +58,8 @@ void uibutton::repaint() {
 
 	if (m_focused == TRUE)
 		uigraph::apply_focus(&rect, m_paint_attrs, uigraph::FOCUS_SURFACE);
+	else
+		uigraph::remove_focus(&rect, m_paint_attrs, uigraph::FOCUS_SURFACE);
 
 	if (m_accelerator != NULL && m_caption != NULL) {
 		char *ch = m_caption;
