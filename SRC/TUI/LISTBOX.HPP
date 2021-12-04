@@ -20,6 +20,9 @@ public:
 	uilistbox(uint16_t id, int top, int left, int width, int height);
 	~uilistbox();
 
+	/** Remove all items. */
+	void clear();
+
 	/** Add an item to the list.
 	 *
 	 * @param text Item text.

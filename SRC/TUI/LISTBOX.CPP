@@ -47,6 +47,16 @@ uilistbox::~uilistbox() {
 	delete m_mnemonic_string;
 }
 
+void uilistbox::clear() {
+	memset(m_items, 0x00, m_items_capacity * sizeof(char *));
+	m_items_count = 0;
+
+	m_selected_item = 0;
+	m_offset = 0;
+
+	this->repaint();
+}
+
 bool_t uilistbox::add_item(const char *text) {
 	if ((m_items_count + 1) > m_items_capacity) {
 		char **new_array = new char *[m_items_capacity +
@@ -262,13 +272,18 @@ void uilistbox::repaint_item(int index, vga::text_rect_t *rect) {
 
 	uint8_t item_attrs = m_paint_attrs;
 
-	if (tui::text_mode == TRUE && index == m_selected_item) {
-		item_attrs = m_selected_attrs;
-		if (m_focused != TRUE)
-			item_attrs = vga::swap_attrs(item_attrs);
+	if (index == m_selected_item) {
+		if (tui::text_mode == TRUE) {
+			item_attrs = m_selected_attrs;
+			if (m_focused == FALSE)
+				item_attrs = vga::swap_attrs(item_attrs);
 
-		uigraph::apply_focus(rect->top + line, rect->left,
-							 item_attrs, max_length);
+			uigraph::apply_focus(rect->top + line, rect->left,
+								 item_attrs, max_length);
+		} else {
+			uigraph::reverse_item(rect->top + line, rect->left,
+								  item_attrs, max_length);
+		}
 	}
 
 	int highlight_len = strlen(m_highlight_string);
@@ -278,7 +293,7 @@ void uilistbox::repaint_item(int index, vga::text_rect_t *rect) {
 												  matches);
 		if (match_count > 0) {
 			for (int i = 0; i < match_count; ++i)
-				if (index == m_selected_item)
+				if (tui::text_mode == TRUE && index == m_selected_item)
 					uigraph::highlight_chars(rect->top + line,
 											 rect->left + matches[i] - buffer,
 											 item_attrs ^ 0x88,
