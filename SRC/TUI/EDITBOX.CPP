@@ -108,6 +108,8 @@ void uieditbox::repaint() {
 
 	if (m_focused == TRUE)
 		uigraph::apply_focus(&rect, m_paint_attrs, uigraph::FOCUS_SURFACE);
+	else
+		uigraph::remove_focus(&rect, m_paint_attrs, uigraph::FOCUS_SURFACE);
 
 	uicontrol::repaint();
 }
@@ -176,7 +178,7 @@ void uieditbox::on_message(tui::message_t *msg, tui::action_t *action) {
 				break;
 
 			case VK_BKSPC:
-				if (text_length > 0) {
+				if (m_caret_pos > 0 && text_length > 0) {
 					if (m_caret_pos < text_length) {
 						int shift_length = 1 + text_length - m_caret_pos;
 						memmove(m_text + m_caret_pos - 1,
