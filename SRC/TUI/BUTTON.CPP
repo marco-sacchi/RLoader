@@ -41,8 +41,10 @@ void uibutton::lose_focus() {
 }
 
 void uibutton::repaint() {
-	if (this->can_repaint() == FALSE)
+	if (this->can_repaint() == FALSE) {
+		m_repaint_pending = TRUE;
 		return;
+	}
 
 	vga::text_rect_t rect;
 	this->get_paint_rect(&rect);

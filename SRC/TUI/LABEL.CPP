@@ -102,8 +102,10 @@ int uilabel::wrap_text(int max_lines) {
 }
 
 void uilabel::repaint() {
-	if (this->can_repaint() == FALSE || m_text == NULL)
+	if (this->can_repaint() == FALSE) {
+		m_repaint_pending = TRUE;
 		return;
+	}
 
 	this->update_transparency_attrs();
 

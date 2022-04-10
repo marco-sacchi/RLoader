@@ -57,7 +57,7 @@ public:
 
 	virtual void repaint();
 
-	virtual void on_message(tui::message_t *msg, tui::action_t *action);
+	virtual void on_message(uiqueue::message_t *msg, tui::action_t *action);
 
 protected:
 	/** Find first item beginning with search string.

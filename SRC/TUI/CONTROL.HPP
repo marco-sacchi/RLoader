@@ -115,6 +115,11 @@ public:
 	 */
 	void get_rect(vga::text_rect_t *rect);
 
+	/** Pause repaints until resume_repaint is called. */
+	void pause_repaint();
+	/** Resume repaints and do a repaint if needed. */
+	void resume_repaint();
+
 	/** Get parent control.
 	 *
 	 * @return Parent control pointer, NULL if not defined.
@@ -230,10 +235,11 @@ protected:
 	/** Check if this control can be repainted.
 	 *
 	 * A control can be repainted when is descendant of a window control
-	 * linked to a view that is in uiview::STATE_OPENED.
+	 * linked to a view that is in uiview::STATE_OPENED and repainting is
+	 * not paused.
 	 * @return TRUE if control can be repainted, FALSE otherwise.
 	 */
-	bool_t uicontrol::can_repaint();
+	bool_t can_repaint();
 
 	/** Unique identifier. */
 	uint16_t m_id;
@@ -245,6 +251,10 @@ protected:
 	bool_t m_focused;
 	/** Flag to track if this control is focusable. */
 	bool_t m_focusable;
+	/** Repaint paused flag. */
+	bool_t m_repaint_paused;
+	/** Flag to track pending repaints due to calls to pause_repaint. */
+	bool_t m_repaint_pending;
 
 	/** Control foreground and background colors paint attributes. */
 	uint8_t m_paint_attrs;

@@ -307,8 +307,10 @@ void uilistbox::repaint_item(int index, vga::text_rect_t *rect) {
 }
 
 void uilistbox::repaint() {
-	if (this->can_repaint() == FALSE)
+	if (this->can_repaint() == FALSE) {
+		m_repaint_pending = TRUE;
 		return;
+	}
 
 	vga::text_rect_t rect;
 	this->calc_list_rect(&rect);

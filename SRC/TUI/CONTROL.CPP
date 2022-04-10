@@ -15,6 +15,8 @@ uicontrol::uicontrol(uint16_t id) {
 	m_parent = m_previous = m_next = m_first_child = NULL;
 	m_view = NULL;
 
+	m_repaint_paused = m_repaint_pending = FALSE;
+
 	m_scroll_bar_attrs = vga::encode_attrs(uitheme::scroll_bar::back,
 										   uitheme::scroll_bar::fore, 0);
 }
@@ -165,6 +167,19 @@ void uicontrol::get_rect(vga::text_rect_t *rect) {
 	memcpy(rect, &m_rect, sizeof(vga::text_rect_t));
 }
 
+void uicontrol::pause_repaint() {
+	m_repaint_paused = TRUE;
+}
+
+void uicontrol::resume_repaint() {
+	m_repaint_paused = FALSE;
+
+	if (m_repaint_pending == TRUE)
+		this->repaint();
+
+	m_repaint_pending = FALSE;
+}
+
 uicontrol *uicontrol::get_last_child() {
 	uicontrol *children = m_first_child;
 	while (children->m_next != NULL)
@@ -290,6 +305,9 @@ void uicontrol::get_parent_rect(vga::text_rect_t *rect) {
 }
 
 bool_t uicontrol::can_repaint() {
+	if (m_repaint_paused == TRUE)
+		return FALSE;
+
 	uicontrol *control = this;
 	while (control->m_parent != NULL)
 		control = control->m_parent;
@@ -313,8 +331,10 @@ void uicontrol::get_paint_rect(vga::text_rect_t *rect) {
 }
 
 void uicontrol::repaint() {
-	if (this->can_repaint() == FALSE)
+	if (this->can_repaint() == FALSE) {
+		m_repaint_pending = TRUE;
 		return;
+	}
 
 	uicontrol *children = m_first_child;
 	while (children != NULL) {
