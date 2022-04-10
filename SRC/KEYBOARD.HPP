@@ -214,6 +214,8 @@ public:
 	static char virtual_key_to_char(uint8_t virt_key);
 
 private:
+	static isr::isrptr_t old_isr;
+
 	/** Normalize read data adding virtual keys values. */
 	static void normalize(read_data_t *data);
 	/** Update bits of keyboard shift keys states. */

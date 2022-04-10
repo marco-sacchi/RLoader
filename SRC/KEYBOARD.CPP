@@ -46,11 +46,14 @@
 #define KS_MODE		(1 << 14)
 #define KS_TX_ERR	(1 << 15)
 
-static isr::isrptr_t old_isr = NULL;
+// Define DEBUG_KEYB on compiler option to enable debugging (for TASM also).
+
+isr::isrptr_t keyboard::old_isr = NULL;
 #ifdef DEBUG_KEYB
-static volatile uint8_t keys_pressed[0x80];
+volatile uint8_t keys_pressed[0x80];
 #endif
-static volatile uint8_t old_key_make_break = 0, key_make_break = 0;
+volatile uint8_t key_make_break = 0;
+static volatile uint8_t old_key_make_break = 0;
 static volatile uint16_t far *keyb_control = (uint16_t far *)0x00400017L;
 static volatile uint16_t far *keyb_state = (uint16_t far *)0x00400096L;
 static volatile uint16_t pressed_shifts = 0, locked_shifts = 0;
@@ -59,16 +62,16 @@ bool_t keyboard::init() {
 #ifdef DEBUG_KEYB
 	memset((void *)keys_pressed, 0x01, 0x80 * sizeof(uint8_t));
 #endif
+	keyboard::old_isr = isr::set(0x09, keyboard::isr_handler);
 
-	old_isr = isr::set(0x09, keyboard::isr_handler);
 	return TRUE;
 }
 
 bool_t keyboard::release() {
-	if (old_isr == NULL)
+	if (keyboard::old_isr == NULL)
 		return FALSE;
 
-	isr::set(0x09, old_isr);
+	isr::set(0x09, keyboard::old_isr);
 	return TRUE;
 }
 
@@ -332,79 +335,4 @@ char keyboard::virtual_key_to_char(uint8_t virt_key) {
 		return '\0';
 
 	return vk_to_char_map[virt_key];
-}
-
-void interrupt keyboard::isr_handler(__CPPARGS) {
-#ifdef DEBUG_KEYB
-	volatile uint8_t far *kptr = keys_pressed;
-#endif
-
-	asm {
-		cli
-
-		push	ax
-
-		in		al, 0x60
-		mov		ah, al
-		and		al, 0x7f
-		cmp		al, 0x58
-		ja		escape
-
-		mov		byte ptr [key_make_break], ah
-	}
-
-	escape:
-	asm {
-		pop		ax
-	}
-
-#ifdef DEBUG_KEYB
-	asm {
-		mov		bl, al
-		and		al, 0x80
-		jnz		key_break
-		mov		al, 0x02
-		jmp		key_make
-	}
-	key_break:
-	asm {
-		mov		al, 0x01
-	}
-	key_make:
-	asm {
-		cld
-
-		push	ds
-		push	es
-		push	si
-		push	di
-
-		les     di, dword ptr [kptr]
-		xor		bh, bh
-		and		bl, 0x7f
-		add     di, bx
-		stosb
-
-		lds     si, dword ptr [kptr]
-		mov		bx, 0xb800
-		mov		es, bx
-		mov		di, 80 * 2 * 4
-
-		mov		cx, 0x80
-		mov		ah, 0x07
-	}
-	show_keys:
-	asm {
-		lodsb
-		stosw
-		loopnz	show_keys
-
-		pop     di
-		pop		si
-		pop		es
-		pop		ds
-	}
-#endif
-
-	old_isr();
 }

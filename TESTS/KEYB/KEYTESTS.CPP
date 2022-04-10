@@ -18,6 +18,8 @@ bool_t keyb_tests() {
 
 	clrscr();
 
+	printf("Press CTRL+ESC to exit.\n");
+
 	keyboard::init();
 
 	bool_t loop = TRUE;

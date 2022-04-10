@@ -22,6 +22,7 @@ bool_t tui_tests(bool_t text_mode) {
 	tui *ui = new tui(text_mode);
 	if (ui == NULL) {
 		printf("Cannot allocate user interface.");
+		keyboard::release();
 		return FALSE;
 	}
 
@@ -29,6 +30,7 @@ bool_t tui_tests(bool_t text_mode) {
 	if (test == NULL) {
 		printf("Cannot allocate test view.");
 		delete ui;
+		keyboard::release();
 		return FALSE;
 	}
 
