@@ -5,10 +5,23 @@
 
 #include "tui/control.hpp"
 
+/** Maximum number of columns in which items are arranged. */
+#define LISTBOX_MAX_COLS	10
+
 /** Listbox control.
  */
 class uilistbox : public uicontrol {
 public:
+	/** Items sorting modes. */
+	enum sorting {
+		/** No sorting. */
+		SORT_NONE,
+		/** Ascending sorting. */
+		SORT_ASCENDING,
+		/** Descending sorting. */
+		SORT_DESCENDING
+	};
+
 	/** Listbox constructor.
 	 *
 	 * @param id Control unique identifier.
@@ -37,6 +50,13 @@ public:
 	 */
 	bool_t set_selected_item(int index);
 
+	/** Select specified item by text.
+	 *
+	 * @param text Text to search for.
+	 * @return True on item selection success, false otherwise.
+	 */
+	bool_t set_selected_item(const char *text);
+
 	/** Get selected item index.
 	 *
 	 * @return Index of selected item, -1 if no item is selected.
@@ -48,6 +68,30 @@ public:
 	 * @return Text of selected item, NULL if no item is selected.
 	 */
 	const char *get_selected_item_text();
+
+	/** Get current number of columns in which items are arranged.
+	 *
+	 * @return Number of columns.
+	 */
+	int get_columns() { return m_columns; }
+
+	/** Set number of columns in which items are arranged.
+	 *
+	 * @param columns Number of columns in range [1, LISTBOX_MAX_COLS].
+	 */
+	void set_columns(int columns);
+
+	/** Get current sorting mode.
+	 *
+	 * @return Current sorting mode.
+	 */
+	sorting get_sort_mode();
+
+	/** Set sorting mode.
+	 *
+	 * @param mode Sorting mode.
+	 */
+	void set_sort_mode(sorting mode);
 
 	/** Set highlight string.
 	 *
@@ -86,6 +130,14 @@ protected:
 	/** Internal list capacity. */
 	int m_items_capacity;
 
+	/** Number of columns in which items are arranged, default 1. */
+	int m_columns;
+	/** Horizontal offset in local coordinates from control left edge. */
+	int m_columns_offsets[LISTBOX_MAX_COLS + 1];
+
+	/** Items sorting mode. */
+	sorting m_sort_mode;
+
 	/** Mnemonic search string. */
 	char *m_mnemonic_string;
 	/** Mnemonic current character pointer into search string. */
@@ -99,9 +151,12 @@ protected:
 	int m_highlight_maxlen;
 
 	/** Array of items string pointers. */
-	const char **m_items;
+	char **m_items;
 
 private:
+	/** Sort items in-place when sorting is not SORT_NONE. */
+	void sort_items();
+
 	/** Append character to the end of mnemonic string.
 	 *
 	 * @param c Character to append.
