@@ -20,11 +20,12 @@ const char *uimsgbox::m_captions[] = {
 	"Yes",
 	"No",
 	"Retry",
-	"Abort"
+	"Abort",
+	"Ignore"
 };
 
 const char uimsgbox::m_accelerators[] = {
-	'O', 'C', 'Y', 'N', 'R', 'A'
+	'O', 'C', 'Y', 'N', 'R', 'A', 'I'
 };
 
 uimsgbox::uimsgbox(const char *caption, const char *message)
@@ -95,6 +96,11 @@ int uimsgbox::calc_buttons_props() {
 }
 
 bool_t uimsgbox::init_controls() {
+	if (m_buttons_count == 0) {
+		if (this->add_button(BTN_OK) == FALSE)
+			return FALSE;
+	}
+
 	int buttons_width = this->calc_buttons_props();
 
 	int message_width = max(buttons_width, MSGBOX_MIN_TEXT_WIDTH);
@@ -140,15 +146,15 @@ bool_t uimsgbox::init_controls() {
 bool_t uimsgbox::on_action(tui::action_t *action) {
 	switch (action->type) {
 		case tui::TUIA_CTRL_DESTROY:
-			if (action->id == ID_WINDOW)
+			if (action->id == ID_WINDOW) {
+				this->queue_result(m_selected_button_id);
 				return TRUE;
+			}
 			break;
 
-		case tui::TUIA_CTRL_CLICK:
-			if (action->type == tui::TUIA_CTRL_CLICK) {
-				m_selected_button_id = action->id;
-				this->queue_close_view();
-			}
+		case tui::TUIA_CTRL_ACTIVATED:
+			m_selected_button_id = action->id;
+			this->queue_close_view();
 			break;
 	}
 

@@ -1,7 +1,9 @@
 #include <string.h>
+#include <dir.h>
 
 #include "tui/testview.hpp"
 #include "tui/msgbox.hpp"
+#include "tui/views/opensave.hpp"
 
 static const char *list_items[] = {
 	"Item 0",
@@ -29,14 +31,14 @@ bool_t testview::init_controls() {
 	if (m_window == NULL)
 		return FALSE;
 
-	m_button1 = new uibutton(ID_BUTTON_OPEN, 5, 8, 11, "Open view");
+	m_button1 = new uibutton(ID_BUTTON_OPEN, 3, 8, 11, "Open view");
 	if (m_button1 == NULL)
 		return FALSE;
 
 	m_button1->set_accelerator('O');
 	m_window->add_control(m_button1);
 
-	m_button2 = new uibutton(ID_BUTTON_CLOSE, 5, 21, 12, "Close view");
+	m_button2 = new uibutton(ID_BUTTON_CLOSE, 3, 21, 12, "Close view");
 	if (m_button2 == NULL)
 		return FALSE;
 
@@ -45,7 +47,7 @@ bool_t testview::init_controls() {
 	m_button2->set_accelerator('V');
 	m_window->add_control(m_button2);
 
-	m_button3 = new uibutton(ID_BUTTON_MSGBOX, 5, 35, 13, "Message box");
+	m_button3 = new uibutton(ID_BUTTON_MSGBOX, 3, 35, 13, "Message box");
 	if (m_button3 == NULL)
 		return FALSE;
 
@@ -53,6 +55,21 @@ bool_t testview::init_controls() {
 	m_button3->set_back_color(2);
 	m_button3->set_accelerator('M');
 	m_window->add_control(m_button3);
+
+	m_button4 = new uibutton(ID_BUTTON_DLGOPEN, 5, 8, 13, "Open dialog");
+	if (m_button4 == NULL)
+		return FALSE;
+
+	m_button4->set_accelerator('P');
+	m_window->add_control(m_button4);
+
+	m_button5 = new uibutton(ID_BUTTON_DLGSAVE, 5, 23, 13, "Save dialog");
+
+	if (m_button5 == NULL)
+		return FALSE;
+
+	m_button5->set_accelerator('S');
+	m_window->add_control(m_button5);
 
 	m_label = new uilabel(ID_LABEL, 7, 8, "Label text:");
 	if (m_label == NULL)
@@ -66,6 +83,7 @@ bool_t testview::init_controls() {
 		return FALSE;
 
 	m_edit->set_text("Long string to test editbox scrolling.");
+	m_edit->set_text("D:\\CPROGS\\RLOADER\\");
 	m_edit->set_accelerator('E');
 	m_window->add_control(m_edit);
 
@@ -80,7 +98,7 @@ bool_t testview::init_controls() {
 		populate_ok = populate_ok && m_list->add_item(list_items[i]);
 
 	m_window->add_control(m_list);
-	if (populate_ok == NULL)
+	if (populate_ok == FALSE)
 		return FALSE;
 
 	return TRUE;
@@ -122,6 +140,10 @@ uimsgbox *testview::create_messagebox() {
 	return msgbox;
 }
 
+uiopensave *testview::create_opensave(uiopensave::mode mode) {
+	return new uiopensave(mode, m_edit->get_text(), "*.*");
+}
+
 bool_t testview::on_action(tui::action_t *action) {
 	switch (action->type) {
 		case tui::TUIA_CTRL_DESTROY:
@@ -139,6 +161,10 @@ bool_t testview::on_action(tui::action_t *action) {
 
 				m_edit->set_text(field_text);
 				m_dialog = NULL;
+			} else if (action->view == m_opensave) {
+				char buffer[MAXPATH];
+				if (m_opensave->get_selected_fullpath(buffer) == TRUE)
+					m_edit->set_text(buffer);
 			}
 
 			break;
@@ -146,24 +172,35 @@ bool_t testview::on_action(tui::action_t *action) {
 		case tui::TUIA_CTRL_ACTIVATED:
 			switch (action->id) {
 				case ID_BUTTON_OPEN:
-					if (action->type == tui::TUIA_CTRL_CLICK) {
-						m_dialog = new testview(5, 16, 50, 16);
-						if (m_dialog != NULL)
-							this->queue_open_view(m_dialog);
-					}
+					m_dialog = new testview(5, 16, 50, 16);
+					if (m_dialog != NULL)
+						this->queue_open_view(m_dialog);
 					break;
 
 				case ID_BUTTON_CLOSE:
-					if (action->type == tui::TUIA_CTRL_CLICK)
-						this->queue_close_view();
+					this->queue_close_view();
 					break;
 
 				case ID_BUTTON_MSGBOX:
-					if (action->type == tui::TUIA_CTRL_CLICK) {
-						uimsgbox *msgbox = this->create_messagebox();
-						if (msgbox != NULL)
-							this->queue_open_view(msgbox);
-					}
+					uimsgbox *msgbox = this->create_messagebox();
+					if (msgbox != NULL)
+						this->queue_open_view(msgbox);
+					break;
+
+				case ID_BUTTON_DLGOPEN:
+					m_opensave = this->create_opensave(
+						uiopensave::MODE_OPEN
+					);
+					if (m_opensave != NULL)
+						this->queue_open_view(m_opensave);
+					break;
+
+				case ID_BUTTON_DLGSAVE:
+					m_opensave = this->create_opensave(
+						uiopensave::MODE_SAVE
+					);
+					if (m_opensave != NULL)
+						this->queue_open_view(m_opensave);
 					break;
 			}
 			break;

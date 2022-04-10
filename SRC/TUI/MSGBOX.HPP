@@ -18,6 +18,7 @@ public:
 		BTN_NO,
 		BTN_RETRY,
 		BTN_ABORT,
+		BTN_IGNORE,
 		/** First available id for custom buttons. */
 		BTN_CUSTOM_FIRST
 	};

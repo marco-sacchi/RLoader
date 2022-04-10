@@ -19,6 +19,7 @@ uicontrol::uicontrol(uint16_t id) {
 
 	m_scroll_bar_attrs = vga::encode_attrs(uitheme::scroll_bar::back,
 										   uitheme::scroll_bar::fore, 0);
+	m_transparent = FALSE;
 }
 
 uicontrol::~uicontrol() {
@@ -159,8 +160,8 @@ void uicontrol::update_transparency_attrs() {
 
 	back_color = control->get_back_color();
 
-	m_paint_attrs = vga::encode_attrs(back_color, fore_color, 0);
-	m_blank_attrs = vga::encode_attrs(back_color, back_color, 0);
+	m_paint_attrs = vga::encode_attrs(back_color, fore_color, blink);
+	m_blank_attrs = vga::encode_attrs(back_color, back_color, blink);
 }
 
 void uicontrol::get_rect(vga::text_rect_t *rect) {

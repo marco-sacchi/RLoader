@@ -46,6 +46,14 @@ int string::icase_index_of(const char *str, char search) {
 	return (int)(ptr - str);
 }
 
+char string::last_char(const char *str) {
+	int length = strlen(str);
+	if (length == 0)
+		return '\0';
+
+	return *(str + length - 1);
+}
+
 char *string::icase_match(const char *str, const char *search) {
 	const char *source = str;
 	const char *search_ptr = search;

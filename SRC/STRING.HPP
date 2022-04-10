@@ -53,6 +53,12 @@ public:
 	 * @return Index of first occurence, -1 if not found.
 	 */
 	static int icase_index_of(const char *str, char search);
+	/** Get last characted or a string.
+	 *
+	 * @param String for which return last character.
+	 * @return Last character or NULL if string has zero lenght.
+	 */
+	static char last_char(const char *str);
 	/** Test for substring match case-insensitively.
 	 *
 	 * @param str String to search in.

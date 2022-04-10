@@ -9,6 +9,8 @@
 #include "tui/editbox.hpp"
 #include "tui/listbox.hpp"
 
+#include "tui/views/opensave.hpp"
+
 class testview : public uiview {
 public:
 	testview(int top, int left, int width, int height);
@@ -25,20 +27,24 @@ private:
 		ID_BUTTON_OPEN,
 		ID_BUTTON_CLOSE,
 		ID_BUTTON_MSGBOX,
+		ID_BUTTON_DLGOPEN,
+		ID_BUTTON_DLGSAVE,
 		ID_LABEL,
 		ID_EDIT,
 		ID_LIST
 	};
 
 	uimsgbox *create_messagebox();
+	uiopensave *create_opensave(uiopensave::mode mode);
 
 	int m_top, m_left;
 	int m_width, m_height;
 
-	uibutton *m_button1, *m_button2, *m_button3;
+	uibutton *m_button1, *m_button2, *m_button3, *m_button4, *m_button5;
 	uilabel *m_label;
 	uieditbox *m_edit;
 	uilistbox *m_list;
+	uiopensave *m_opensave;
 	testview *m_dialog;
 };
 

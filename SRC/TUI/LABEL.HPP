@@ -30,6 +30,13 @@ public:
 			const char *text);
 	~uilabel();
 
+	/** Set or update displayed text.
+	 *
+	 * @param text Text to be displayed.
+	 * @return True on success, false on allocation error.
+	 */
+	bool_t set_text(const char *text);
+
 	virtual void repaint();
 
 private:
@@ -48,6 +55,10 @@ private:
 	int m_lines_count;
 	/** Width of longest line of text in characters when not autosized. */
 	int m_effective_width;
+	/** Flag to track multiline or single line label. */
+	bool_t m_multiline;
+	/** Flag to track autosize. */
+	bool_t m_autosize;
 };
 
 #endif

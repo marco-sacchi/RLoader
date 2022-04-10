@@ -32,6 +32,9 @@ T max(T a, T b) {
  */
 template <class T>
 T clamp(T v, T min, T max) {
+	if (max < min)
+		max = min;
+
 	if (v < min) return min;
 	if (v > max) return max;
 

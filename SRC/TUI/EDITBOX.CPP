@@ -129,8 +129,9 @@ void uieditbox::render_caret(uint16_t pos) {
 }
 
 void uieditbox::on_message(uiqueue::message_t *msg, tui::action_t *action) {
+	keyboard::read_data_t *data;
 	if (msg->type == uiqueue::TUIM_KEYPRESS) {
-		keyboard::read_data_t *data = (keyboard::read_data_t *)msg->data;
+		data = (keyboard::read_data_t *)msg->data;
 
 		uint16_t prev_caret_pos = m_caret_pos;
 		uint16_t prev_text_offset = m_text_offset;
@@ -246,6 +247,15 @@ void uieditbox::on_message(uiqueue::message_t *msg, tui::action_t *action) {
 			action->type = tui::TUIA_CTRL_VALUE_CHANGED;
 			action->id = m_id;
 			action->control = this;
+		}
+	} else if (msg->type == uiqueue::TUIM_KEYUP) {
+		data = (keyboard::read_data_t *)msg->data;
+		switch (data->virt_key) {
+			case VK_ENTER:
+				action->type = tui::TUIA_CTRL_ACTIVATED;
+				action->id = m_id;
+				action->control = this;
+				break;
 		}
 	}
 }
