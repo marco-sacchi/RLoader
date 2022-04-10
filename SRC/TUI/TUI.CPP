@@ -7,10 +7,14 @@
 #include "tui/window.hpp"
 
 bool_t tui::text_mode;
+uiqueue *tui::messages;
 
 tui::tui(bool_t text_mode) {
 	m_curr_view = NULL;
+	m_view_closing = FALSE;
+
 	tui::text_mode = text_mode;
+	tui::messages = new uiqueue();
 
 	uitheme::init(text_mode);
 
@@ -25,6 +29,9 @@ tui::~tui() {
 		delete view;
 		view = previous;
 	}
+
+	delete tui::messages;
+	tui::messages = NULL;
 
 	m_curr_view = NULL;
 
@@ -90,22 +97,22 @@ bool_t tui::task() {
 		}
 	}
 
-	tui::message_t msg;
-	memset(&msg, 0x00, sizeof(tui::message_t));
+	uiqueue::message_t msg;
+	memset(&msg, 0x00, sizeof(uiqueue::message_t));
 
 	switch (this->keyb_data.type) {
 		case keyboard::KEV_MAKE:
-			msg.type = tui::TUIM_KEYDOWN;
+			msg.type = uiqueue::TUIM_KEYDOWN;
 			msg.data = &(this->keyb_data);
 			break;
 
 		case keyboard::KEV_PRESS:
-			msg.type = tui::TUIM_KEYPRESS;
+			msg.type = uiqueue::TUIM_KEYPRESS;
 			msg.data = &(this->keyb_data);
 			break;
 
 		case keyboard::KEV_BREAK:
-			msg.type = tui::TUIM_KEYUP;
+			msg.type = uiqueue::TUIM_KEYUP;
 			msg.data = &(this->keyb_data);
 			break;
 	}
@@ -114,16 +121,42 @@ bool_t tui::task() {
 	m_curr_view->on_action(&action);
 
 	// TODO: need better implementation.
-	while (m_curr_view != NULL &&
-		   m_curr_view->dequeue_message(&msg) == TRUE) {
-		if (msg.type == TUIM_OPEN_VIEW) {
-			this->open_view((uiview *)msg.data);
-		} else if (msg.type == TUIM_CLOSE_VIEW) {
-			this->close_view((uiview *)msg.data);
+	m_view_closing = FALSE;
+	while (m_view_closing == FALSE && tui::messages->dequeue(&msg) == TRUE) {
+		switch (msg.type) {
+			case uiqueue::TUIM_OPEN_VIEW:
+				this->open_view((uiview *)msg.data);
+				break;
+
+			case uiqueue::TUIM_CLOSE_VIEW:
+				this->close_view((uiview *)msg.data);
+				m_view_closing = TRUE;
+				break;
+
+			case uiqueue::TUIM_CRIT_ERR:
+				int pippo = 3;
+				break;
 		}
 	}
 
 	return TRUE;
+}
+
+int tui::modal_loop() {
+	while (this->task())
+		if (m_view_closing == TRUE)
+			break;
+
+	int result = 0;
+	uiqueue::message msg;
+	tui::messages->get_first(&msg);
+	if (msg.type == uiqueue::TUIM_VIEW_RESULT) {
+		result = msg.param;
+		tui::messages->dequeue(&msg);
+	}
+
+	m_view_closing = FALSE;
+	return result;
 }
 
 bool_t tui::open_view(uiview *view) {

@@ -11,20 +11,12 @@ uiview::uiview() {
 	m_window = NULL;
 	m_state = STATE_INITIALIZING;
 	m_previous = NULL;
-
-	m_message_queue = new tui::message_t[MAX_QUEUE_SIZE];
-	m_message_queue_count = 0;
 }
 
 uiview::~uiview() {
 	if (m_window != NULL) {
 		delete m_window;
 		m_window = NULL;
-	}
-
-	if (m_message_queue != NULL) {
-		delete m_message_queue;
-		m_message_queue = NULL;
 	}
 
 	m_state = STATE_DESTROYED;
@@ -74,37 +66,11 @@ bool_t uiview::got_focus() {
 	return TRUE;
 }
 
-bool_t uiview::queue_message(tui::message_t *message) {
-	if (m_message_queue_count >= MAX_QUEUE_SIZE)
-		return FALSE;
-
-	memcpy(&m_message_queue[m_message_queue_count++],
-		   message, sizeof(tui::message_t));
-
-	return TRUE;
-}
-
-bool_t uiview::dequeue_message(tui::message_t *dest) {
-	if (m_message_queue_count == 0)
-		return FALSE;
-
-	memcpy(&m_message_queue[m_message_queue_count],
-		   m_message_queue, sizeof(tui::message_t));
-
-	memcpy(dest, m_message_queue, sizeof(tui::message_t));
-
-	if (--m_message_queue_count > 0)
-		memmove(m_message_queue, &m_message_queue[1],
-				sizeof(tui::message_t) * m_message_queue_count);
-
-	return TRUE;
-}
-
 bool_t uiview::queue_open_view(uiview *view) {
-	tui::message_t msg;
-	msg.type = tui::TUIM_OPEN_VIEW;
+	uiqueue::message_t msg;
+	msg.type = uiqueue::TUIM_OPEN_VIEW;
 	msg.data = view;
-	return this->queue_message(&msg);
+	return tui::messages->queue(&msg);
 }
 
 bool_t uiview::queue_close_view() {
@@ -112,8 +78,16 @@ bool_t uiview::queue_close_view() {
 }
 
 bool_t uiview::queue_close_view(uiview *view) {
-	tui::message_t msg;
-	msg.type = tui::TUIM_CLOSE_VIEW;
+	uiqueue::message_t msg;
+	msg.type = uiqueue::TUIM_CLOSE_VIEW;
 	msg.data = view;
-	return this->queue_message(&msg);
+	return tui::messages->queue(&msg);
+}
+
+bool_t uiview::queue_result(int result) {
+	uiqueue::message_t msg;
+	msg.type = uiqueue::TUIM_VIEW_RESULT;
+	msg.param = result;
+	msg.data = NULL;
+	return tui::messages->queue(&msg);
 }

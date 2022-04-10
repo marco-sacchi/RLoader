@@ -126,8 +126,8 @@ void uieditbox::render_caret(uint16_t pos) {
 		vga::write_char('_', 0x80 | (m_paint_attrs & 0x07), 1);
 }
 
-void uieditbox::on_message(tui::message_t *msg, tui::action_t *action) {
-	if (msg->type == tui::TUIM_KEYPRESS) {
+void uieditbox::on_message(uiqueue::message_t *msg, tui::action_t *action) {
+	if (msg->type == uiqueue::TUIM_KEYPRESS) {
 		keyboard::read_data_t *data = (keyboard::read_data_t *)msg->data;
 
 		uint16_t prev_caret_pos = m_caret_pos;

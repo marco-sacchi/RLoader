@@ -79,19 +79,6 @@ public:
 	 */
 	bool_t got_focus();
 
-	/** Queue message to be dispatched from TUI main loop.
-	 *
-	 * @param message Message to be copied into the queue.
-	 * @return TRUE on success, FALSE if queue is full.
-	 */
-	bool_t queue_message(tui::message_t *message);
-	/** Dequeue message from view internal queue.
-	 *
-	 * @param dest Message on top of the queue will be copied here.
-	 * @return TRUE on success, FALSE if queue is empty.
-	 */
-	bool_t dequeue_message(tui::message_t *dest);
-
 protected:
 	/** Queue message to open specified view.
 	 *
@@ -110,6 +97,12 @@ protected:
 	 * @return TRUE on queue success, FALSE if queue is full.
 	 */
 	bool_t queue_close_view(uiview *view);
+	/** Queue message to store result on view close.
+	 *
+	 * @param result View result.
+	 * @return TRUE on queue success, FALSE if queue is full.
+	 */
+	bool_t queue_result(int result);
 
 	/** View state. */
 	state m_state;
@@ -119,12 +112,6 @@ protected:
 	uiwindow *m_window;
 	/** Previous view. */
 	uiview *m_previous;
-
-private:
-	/** Message queue. */
-	tui::message_t *m_message_queue;
-	/** Number of messages in the queue. */
-	int m_message_queue_count;
 };
 
 #endif

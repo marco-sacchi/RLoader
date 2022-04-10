@@ -5,6 +5,8 @@
 
 #include "keyboard.hpp"
 
+#include "tui/msgqueue.hpp"
+
 // Forward declarations.
 class uicontrol;
 class uiview;
@@ -12,27 +14,12 @@ class uiview;
 /** Text-based and graphics user interface. */
 class tui {
 public:
-	/** Message types enumeration. */
-	enum message_types {
-		/** Keyboard key down. */
-		TUIM_KEYDOWN = 1,
-		/** Keyboard repeat while key down. */
-		TUIM_KEYPRESS,
-		/** Keyboard key release. */
-		TUIM_KEYUP,
-
-		/** Open new view. */
-		TUIM_OPEN_VIEW,
-		/** Close view. */
-		TUIM_CLOSE_VIEW
-	};
-
 	/** Control actions enumeration. */
 	enum action_types {
 		/** A view is closed. */
 		TUIA_VIEW_CLOSED = 1,
-		/** Click on control. */
-		TUIA_CTRL_CLICK,
+		/** Control activated by ENTER key. */
+		TUIA_CTRL_ACTIVATED,
 		/** New control is focused on current view. */
 		TUIA_CTRL_FOCUS,
 		/** Control is destroyed. */
@@ -46,16 +33,6 @@ public:
 		/** Control item activated by ENTER key. */
 		TUIA_ITEM_ACTIVATED
 	};
-
-	/** Message sent from low-level code to controls. */
-	typedef struct {
-		/** Message type. */
-		message_types type;
-		/** Message parameter. */
-		int param;
-		/** Message additional data. */
-		void *data;
-	} message_t;
 
 	/** Action returned by controls when a message is processed. */
 	typedef struct {
@@ -84,6 +61,13 @@ public:
 	 */
 	bool_t task();
 
+	/** Loop modally until last opened view is closed then return.
+	 *
+	 * @return View result value if view queue TUIM_VIEW_RESULT event,
+	 * zero otherwise.
+	 */
+	int modal_loop();
+
 	/** Open specified view.
 	 *
 	 * @param view View to be opened and made current.
@@ -102,11 +86,15 @@ public:
 	 * @note It must only be read.
 	 */
 	static bool_t text_mode;
+
+	static uiqueue *messages;
 private:
 	/** Currently active view. */
 	uiview *m_curr_view;
 	/** Data read from keyboard. */
 	keyboard::read_data_t keyb_data;
+	/** Track if topmost view is closed for modal_loop method. */
+	bool_t m_view_closing;
 };
 
 #endif

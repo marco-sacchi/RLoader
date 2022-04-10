@@ -37,7 +37,7 @@ public:
 	virtual void got_focus();
 	virtual void lose_focus();
 
-	virtual void on_message(tui::message_t *msg, tui::action_t *action);
+	virtual void on_message(uiqueue::message_t *msg, tui::action_t *action);
 
 private:
 	/** Render caret at specified position.

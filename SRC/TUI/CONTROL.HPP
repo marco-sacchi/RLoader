@@ -192,7 +192,7 @@ public:
 	 * @param msg Received message.
 	 * @param action Filled with action data to return to main UI task.
 	 */
-	virtual void on_message(tui::message_t *msg, tui::action_t *action) { }
+	virtual void on_message(uiqueue::message_t *msg, tui::action_t *action) { }
 
 protected:
 	/** Set control text/foreground color.

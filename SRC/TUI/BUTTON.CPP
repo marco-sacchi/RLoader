@@ -90,13 +90,13 @@ void uibutton::on_accelerator(tui::action_t *action) {
 	m_pressed = FALSE;
 	this->repaint();
 
-	action->type = tui::TUIA_CTRL_CLICK;
+	action->type = tui::TUIA_CTRL_ACTIVATED;
 	action->id = m_id;
 	action->control = this;
 }
 
-void uibutton::on_message(tui::message_t *msg, tui::action_t *action) {
-	if (msg->type == tui::TUIM_KEYDOWN && m_pressed == FALSE) {
+void uibutton::on_message(uiqueue::message_t *msg, tui::action_t *action) {
+	if (msg->type == uiqueue::TUIM_KEYDOWN && m_pressed == FALSE) {
 		keyboard::read_data_t *data = (keyboard::read_data_t *)msg->data;
 		bool_t triggered = (data->virt_key == VK_SPACE ||
 							data->virt_key == VK_ENTER);
@@ -105,7 +105,7 @@ void uibutton::on_message(tui::message_t *msg, tui::action_t *action) {
 			m_pressed = TRUE;
 			this->repaint();
 		}
-	} else if (msg->type == tui::TUIM_KEYUP && m_pressed == TRUE) {
+	} else if (msg->type == uiqueue::TUIM_KEYUP && m_pressed == TRUE) {
 		keyboard::read_data_t *data = (keyboard::read_data_t *)msg->data;
 		bool_t triggered = (data->virt_key == VK_SPACE ||
 							data->virt_key == VK_ENTER ||
@@ -116,7 +116,7 @@ void uibutton::on_message(tui::message_t *msg, tui::action_t *action) {
 			this->repaint();
 
 			if (data->virt_key != VK_ESC) {
-				action->type = tui::TUIA_CTRL_CLICK;
+				action->type = tui::TUIA_CTRL_ACTIVATED;
 				action->id = m_id;
 				action->control = this;
 			}

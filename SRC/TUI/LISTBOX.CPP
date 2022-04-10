@@ -341,14 +341,14 @@ void uilistbox::repaint() {
 	uicontrol::repaint();
 }
 
-void uilistbox::on_message(tui::message_t *msg, tui::action_t *action) {
-	if (msg->type != tui::TUIM_KEYPRESS && msg->type != tui::TUIM_KEYUP)
+void uilistbox::on_message(uiqueue::message_t *msg, tui::action_t *action) {
+	if (msg->type != uiqueue::TUIM_KEYPRESS && msg->type != uiqueue::TUIM_KEYUP)
 		return;
 
 	keyboard::read_data_t *data = (keyboard::read_data_t *)msg->data;
 	bool_t new_item_selected = FALSE;
 
-	if (msg->type == tui::TUIM_KEYPRESS) {
+	if (msg->type == uiqueue::TUIM_KEYPRESS) {
 		vga::text_rect_t rect;
 		this->calc_list_rect(&rect);
 		int displayed_lines = rect.bottom - rect.top + 1;
@@ -404,7 +404,7 @@ void uilistbox::on_message(tui::message_t *msg, tui::action_t *action) {
 
 	if (new_item_selected == TRUE ||
 		m_last_action == tui::TUIA_ITEM_SELECTING) {
-		if (msg->type == tui::TUIM_KEYPRESS)
+		if (msg->type == uiqueue::TUIM_KEYPRESS)
 			action->type = tui::TUIA_ITEM_SELECTING;
 		else
 			action->type = tui::TUIA_ITEM_SELECTED;

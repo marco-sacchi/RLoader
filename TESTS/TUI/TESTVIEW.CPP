@@ -143,7 +143,7 @@ bool_t testview::on_action(tui::action_t *action) {
 
 			break;
 
-		case tui::TUIA_CTRL_CLICK:
+		case tui::TUIA_CTRL_ACTIVATED:
 			switch (action->id) {
 				case ID_BUTTON_OPEN:
 					if (action->type == tui::TUIA_CTRL_CLICK) {
