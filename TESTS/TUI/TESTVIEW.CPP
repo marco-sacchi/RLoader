@@ -27,7 +27,8 @@ testview::testview(int top, int left, int width, int height)
 
 bool_t testview::init_controls() {
 	m_window = new uiwindow(ID_WINDOW, m_top, m_left, m_width, m_height,
-							uiwindow::CAPTIONED, "Test caption");
+							uiwindow::FRAMED | uiwindow::CAPTIONED,
+							"Test caption");
 	if (m_window == NULL)
 		return FALSE;
 

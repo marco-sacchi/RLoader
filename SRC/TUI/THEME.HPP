@@ -40,6 +40,11 @@ public:
 		static uint8_t caption_back;
 	};
 
+	struct shadow {
+		static uint8_t fore;
+		static uint8_t back;
+	};
+
 	static void init(bool_t text_mode);
 };
 

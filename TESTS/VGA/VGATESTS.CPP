@@ -1,6 +1,7 @@
 #include <conio.h>
 #include <stdio.h>
 #include <dos.h>
+#include <mem.h>
 
 #include "vga/vgatests.hpp"
 
@@ -57,9 +58,129 @@ bool_t display_bitmap() {
 	return TRUE;
 }
 
+bool_t draw_font_bitmap(vga::font_info_ptr pointer, vga::font_info_t *info) {
+	uint8_t far *bitmap = (uint8_t far *)info->pointer;
+	int height = 0;
+	switch (pointer) {
+		case vga::INT_1F_VECTOR:
+		case vga::INT_43_VECTOR:
+			return TRUE;
+
+		case vga::ROM_8x14_FONT:
+		case vga::ROM_9x14_ALT_FONT:
+			height = 14;
+			break;
+
+		case vga::ROM_8x8_2DOT_FONT:
+		case vga::ROM_8x8_2DOT_FONT_TOP:
+			height = 8;
+			break;
+
+		case vga::ROM_8x16_FONT:
+		case vga::ROM_9x16_ALT_FONT:
+			height = 16;
+			break;
+
+		default:
+			return FALSE;
+	}
+
+	for (int ch = 0; ch < 10; ++ch) {
+		for (int j = 0; j < height; ++j) {
+			uint8_t line = *bitmap++;
+
+			for (int i = 0; i < 8; ++i) {
+				vga::set_cursor_pos(j + 2, 7 - i + ch * 8);
+				vga::write_char(((line >> i) & 1) ? 0xdb : ' ', 0x07, 1);
+			}
+		}
+	}
+
+	return TRUE;
+}
+
+void display_font_info(vga::font_info_ptr pointer) {
+	vga::font_info_t info;
+	vga::get_font_info(pointer, &info);
+
+	clrscr();
+	printf("Pointer %d: %p, scanlines: %d, rows: %d\n", pointer,
+		   info.pointer, info.scanlines_per_char, info.chars_rows);
+
+	draw_font_bitmap(pointer, &info);
+
+	getch();
+}
+
+void custom_alpha_chars() {
+	const int num_chars = 8, first_char = 0xc8;
+
+	uint8_t previous[num_chars * 16];
+	uint8_t new_chars[num_chars * 16] = {
+		0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff,
+
+		0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0,
+		0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0,
+
+		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+
+		0xff, 0xff, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0,
+		0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0,
+
+		0xff, 0xff, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+
+		0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0,
+		0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xff, 0xff,
+
+		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xff, 0xff
+	};
+
+	vga::font_info_t info;
+	vga::get_font_info(vga::ROM_8x16_FONT, &info);
+	memcpy(previous, (uint8_t far *)info.pointer + first_char * 16,
+		   num_chars * 16);
+
+	uint8_t chars[num_chars + 1];
+	for (int i = 0; i < num_chars; ++i)
+		chars[i] = i + first_char;
+
+	chars[i] = NULL;
+
+	clrscr();
+	printf("Next characters will be modified: %s", chars);
+	getch();
+
+	vga::load_alpha_font(new_chars, 16, num_chars, first_char, 0);
+
+	getch();
+
+	vga::load_alpha_font(previous, 16, num_chars, first_char, 0);
+
+	getch();
+}
+
 bool_t tests(bool_t graphics) {
 	if (graphics == TRUE)
 		vga::set_mode(0x12);
+
+	display_font_info(vga::INT_1F_VECTOR);
+	display_font_info(vga::INT_43_VECTOR);
+	display_font_info(vga::ROM_8x14_FONT);
+	display_font_info(vga::ROM_8x8_2DOT_FONT);
+	display_font_info(vga::ROM_8x8_2DOT_FONT_TOP);
+	display_font_info(vga::ROM_9x14_ALT_FONT);
+	display_font_info(vga::ROM_8x16_FONT);
+	display_font_info(vga::ROM_9x16_ALT_FONT);
+
+	if (graphics == FALSE)
+		custom_alpha_chars();
 
 	vga::set_cursor_type(0, 15);
 	vga::set_cursor_pos(3, 16);
@@ -116,3 +237,4 @@ bool_t tests(bool_t graphics) {
 
 	return TRUE;
 }
+

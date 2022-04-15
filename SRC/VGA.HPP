@@ -117,6 +117,25 @@ public:
 		XOR_WITH_LATCH = 0x03
 	};
 
+	enum font_info_ptr {
+		/** Interrupt 1fh pointer. */
+		INT_1F_VECTOR = 0,
+		/** Interrupt 43h pointer. */
+		INT_43_VECTOR = 1,
+		/** ROM 8x14 font pointer. */
+		ROM_8x14_FONT = 2,
+		/** ROM 8x8 double-dot font pointer. */
+		ROM_8x8_2DOT_FONT = 3,
+		/** ROM 8x8 double-dot font pointer (top). */
+		ROM_8x8_2DOT_FONT_TOP = 4,
+		/** ROM 9x14 text alternative font pointer. */
+		ROM_9x14_ALT_FONT = 5,
+		/** ROM 8x16 font pointer. */
+		ROM_8x16_FONT = 6,
+		/** ROM 9x16 text alternative font pointer. */
+		ROM_9x16_ALT_FONT = 7
+	};
+
 	/** Video state. */
 	typedef struct {
 		/** Mode number. */
@@ -152,6 +171,16 @@ public:
 		/** Zero-based bottom-right corner in characters cells coordinates. */
 		uint8_t bottom, right;
 	} text_rect_t;
+
+	/** Font info. */
+	typedef struct {
+		/** Specified pointer. */
+		void far *pointer;
+		/** Scanlines per character of displayed font. */
+		uint16_t scanlines_per_char;
+		/** Number of displayed rows. */
+		uint8_t chars_rows;
+	} font_info_t;
 
 	/** RGB triplet to set color palette entry. */
 	typedef uint8_t color_t[3];
@@ -406,6 +435,28 @@ public:
 	 * @param rgb Color as rgb triplet.
 	 */
 	static void set_color(uint8_t index, const vga::color_t rgb);
+
+	/** Get font information.
+	 *
+	 * @param pointer Type of pointer to return.
+	 * @param info Valorized with font information.
+	 */
+	static void get_font_info(font_info_ptr pointer, font_info_t *info);
+
+	/** Load user-defined alpha font.
+	 *
+	 * @note Characters in range [0xc0, 0xdf] will duplicate the eighth column
+	 *       to the ninth one.
+	 * @param bitmap Characters bitmap.
+	 * @param bytes_per_char Bytes per character.
+	 * @param chars_count Number of characters to load.
+	 * @param first_char Index of first character into the bitmap.
+	 * @param font_block Number of font block.
+	 */
+	static void load_alpha_font(const void *bitmap, uint8_t bytes_per_char,
+								uint16_t chars_count, uint16_t first_char,
+								uint8_t font_block);
+
 };
 
 #endif

@@ -114,9 +114,9 @@ bool_t uimsgbox::init_controls() {
 	label->get_rect(&rect);
 
 	int window_height = rect.bottom - rect.top + 6;
-
 	m_window = new uiwindow(ID_WINDOW, 0, 0, window_width, window_height,
-							uiwindow::CAPTIONED | uiwindow::CENTERED,
+							uiwindow::FRAMED | uiwindow::CAPTIONED |
+							uiwindow::CENTERED,
 							m_caption);
 	if (m_window == NULL)
 		return FALSE;

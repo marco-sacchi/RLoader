@@ -4,9 +4,10 @@
 #include "graphics.hpp"
 #include "tui/theme.hpp"
 
+#define FRAME_CHARS		8
+
 /** Utility methods to abstract graphics/text-mode UI elements drawing. */
 class uigraph {
-
 public:
 	/** Focus graphics style. */
 	enum focus_style {
@@ -15,6 +16,14 @@ public:
 		/** Focus drawed as full control surface colors highlight. */
 		FOCUS_SURFACE = 0x02
 	};
+
+	/** Modify characters generator bitmap to render customized frame.
+	 *
+	 * @return True on success, false on unrecognized font height.
+	 */
+	static bool_t setup_frame_chars();
+	/** Restore modified charaters generator bitmap. */
+	static void restore_chars();
 
 	/** Enable hardware cursor, only when in text-mode.
 	 *
@@ -30,6 +39,21 @@ public:
 	 *              accelerator character.
 	 */
 	static void draw_accelerator(uint8_t row, uint8_t col, uint8_t attrs);
+
+	/** Draw frame accounting for customized characters.
+	 *
+	 * @deprecated use uigraph::draw_frame
+	 * @param rect Rectangle into which draw the frame.
+	 * @param attrs Attrbutes of the drawed characters.
+	 */
+	static void draw_frame(vga::text_rect_t *rect, uint8_t attrs);
+	/** Draw filled frame accounting for customized characters.
+	 *
+	 * @deprecated use uigraph::draw_filled_frame
+	 * @param rect Rectangle into which draw the frame.
+	 * @param attrs Attrbutes of the drawed characters.
+	 */
+	static void draw_filled_frame(vga::text_rect_t *rect, uint8_t attrs);
 
 	/** Highlight (underline in graphic mode) characters.
 	 *
@@ -95,6 +119,22 @@ public:
 	 * @param attr Painting color attributes of control.
 	 */
 	static void apply_active(vga::text_rect_t *rect, uint8_t attr);
+
+	/** Render a shadow around specified rectangle clipping it if necessary.
+	 *
+	 * @param rect Reference rectangle.
+	 */
+	static void draw_shadow(vga::text_rect_t *rect);
+
+private:
+	/** True when character generator is customized, false otherwise. */
+	static bool_t custom_frame;
+	/** Original character generator bitmap data. */
+	static uint8_t previous_chars[FRAME_CHARS * 16];
+	/** Original character generator char height. */
+	static int previous_char_height;
+	/** Frame charaters indices. */
+	static uint8_t uigraph::frame_chars[FRAME_CHARS];
 };
 
 #endif

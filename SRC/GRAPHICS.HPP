@@ -81,6 +81,7 @@ public:
 
 	/** Draw frame using text BIOS services.
 	 *
+	 * @deprecated use uigraph::draw_frame
 	 * @param rect Rectangle into which draw the frame.
 	 * @param attrs Attrbutes of the drawed characters.
 	 */
@@ -88,6 +89,7 @@ public:
 
 	/** Draw filled frame using text BIOS services.
 	 *
+     * @deprecated use uigraph::draw_filled_frame
 	 * @param rect Rectangle into which draw the frame.
 	 * @param attrs Attrbutes of the drawed characters.
 	 */

@@ -3,6 +3,7 @@
 #include "vga.hpp"
 #include "tui/tui.hpp"
 #include "tui/theme.hpp"
+#include "tui/graph.hpp"
 #include "tui/view.hpp"
 #include "tui/window.hpp"
 
@@ -15,6 +16,8 @@ tui::tui(bool_t text_mode) {
 
 	tui::text_mode = text_mode;
 	tui::messages = new uiqueue();
+
+	uigraph::setup_frame_chars();
 
 	uitheme::init(text_mode);
 
@@ -37,6 +40,8 @@ tui::~tui() {
 
 	vga::set_blinking(TRUE);
 	vga::enable_cursor(TRUE);
+
+	uigraph::restore_chars();
 }
 
 bool_t tui::task() {

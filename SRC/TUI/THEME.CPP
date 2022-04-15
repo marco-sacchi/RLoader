@@ -23,6 +23,9 @@ uint8_t uitheme::window::back = 0x08;
 uint8_t uitheme::window::caption_fore = 0x0f;
 uint8_t uitheme::window::caption_back = 0x07;
 
+uint8_t uitheme::shadow::fore = 0x08;
+uint8_t uitheme::shadow::back = 0x00;
+
 void uitheme::init(bool_t text_mode) {
 	// Already initialized values for text-mode UI.
 	if (text_mode == TRUE)

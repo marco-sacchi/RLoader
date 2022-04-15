@@ -468,3 +468,30 @@ void vga::set_color(uint8_t index, const vga::color_t rgb) {
 	outp(VGA_DAC_DATA, rgb[2] >> 2);
 }
 
+void vga::get_font_info(font_info_ptr pointer, font_info_t *info) {
+	struct REGPACK regs;
+
+	regs.r_ax = 0x1130;
+	regs.r_bx = (pointer << 8);
+
+	intr(0x10, &regs);
+
+	info->pointer = MK_FP(regs.r_es, regs.r_bp);
+	info->scanlines_per_char = regs.r_cx;
+	info->chars_rows = (uint8_t)(regs.r_dx & 0xff) + 1;
+}
+
+void vga::load_alpha_font(const void *bitmap, uint8_t bytes_per_char,
+						  uint16_t chars_count, uint16_t first_char,
+						  uint8_t font_block) {
+	struct REGPACK regs;
+
+	regs.r_ax = 0x1100;
+	regs.r_bx = font_block | ((uint16_t)bytes_per_char << 8);
+	regs.r_cx = chars_count;
+	regs.r_dx = first_char;
+	regs.r_es = FP_SEG(bitmap);
+	regs.r_bp = FP_OFF(bitmap);
+
+	intr(0x10, &regs);
+}

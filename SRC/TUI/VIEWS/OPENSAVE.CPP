@@ -84,7 +84,8 @@ bool_t uiopensave::init_controls() {
 	}
 
 	m_window = new uiwindow(ID_WINDOW, 0, 0, 48, 19,
-							uiwindow::CAPTIONED | uiwindow::CENTERED,
+							uiwindow::FRAMED | uiwindow::CAPTIONED |
+							uiwindow::CENTERED,
 							window_caption);
 	if (m_window == NULL)
 		return FALSE;

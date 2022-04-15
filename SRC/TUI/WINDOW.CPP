@@ -185,29 +185,30 @@ void uiwindow::repaint() {
 	vga::text_rect_t rect;
 	this->get_paint_rect(&rect);
 
+	uigraph::draw_shadow(&rect);
+
 	graphics::draw_filled_rect(&rect, m_paint_attrs);
 
-	if (m_style & uiwindow::FRAMED)
-		graphics::draw_frame(&rect, m_paint_attrs);
-	else if (tui::text_mode == FALSE)
-		graphics::draw_outline(&rect, m_paint_attrs);
+	if (m_style & uiwindow::FRAMED) {
+		if (tui::text_mode == TRUE)
+			uigraph::draw_frame(&rect, m_paint_attrs);
+		else
+			graphics::draw_outline(&rect, m_paint_attrs);
+	}
 
 	if (m_style & uiwindow::CAPTIONED) {
 		uint8_t rect_width = rect.right - rect.left + 1;
 		uint8_t caption_length = min(rect_width, (uint8_t)strlen(m_caption));
 		uint8_t caption_start = (rect_width >> 1) - (caption_length >> 1);
 
+		vga::set_cursor_pos(rect.top, rect.left);
+		vga::write_char(' ', m_paint_attrs, rect_width);
+
 		vga::set_cursor_pos(rect.top, rect.left + caption_start);
 		vga::write_string(m_caption, caption_length, m_paint_attrs,
 						  vga::USE_ATTRS_UPDATE_CURSOR);
 
-		if (!(m_style & uiwindow::FRAMED)) {
-			if (tui::text_mode == TRUE)
-				vga::write_attrs(rect.top, rect.left, m_caption_attrs,
-								 rect_width);
-			else
-				uigraph::reverse_item(rect.top, rect.left, m_paint_attrs, rect_width);
-		}
+		uigraph::reverse_item(rect.top, rect.left, m_paint_attrs, rect_width);
 	}
 
 	// Repaint descendants.
