@@ -32,14 +32,14 @@ bool_t testview::init_controls() {
 	if (m_window == NULL)
 		return FALSE;
 
-	m_button1 = new uibutton(ID_BUTTON_OPEN, 3, 8, 11, "Open view");
+	m_button1 = new uibutton(ID_BUTTON_OPEN, 3, 4, 11, "Open view");
 	if (m_button1 == NULL)
 		return FALSE;
 
 	m_button1->set_accelerator('O');
 	m_window->add_control(m_button1);
 
-	m_button2 = new uibutton(ID_BUTTON_CLOSE, 3, 21, 12, "Close view");
+	m_button2 = new uibutton(ID_BUTTON_CLOSE, 3, 17, 12, "Close view");
 	if (m_button2 == NULL)
 		return FALSE;
 
@@ -48,7 +48,7 @@ bool_t testview::init_controls() {
 	m_button2->set_accelerator('V');
 	m_window->add_control(m_button2);
 
-	m_button3 = new uibutton(ID_BUTTON_MSGBOX, 3, 35, 13, "Message box");
+	m_button3 = new uibutton(ID_BUTTON_MSGBOX, 3, 31, 9, "Msg box");
 	if (m_button3 == NULL)
 		return FALSE;
 
@@ -57,14 +57,14 @@ bool_t testview::init_controls() {
 	m_button3->set_accelerator('M');
 	m_window->add_control(m_button3);
 
-	m_button4 = new uibutton(ID_BUTTON_DLGOPEN, 5, 8, 13, "Open dialog");
+	m_button4 = new uibutton(ID_BUTTON_DLGOPEN, 5, 4, 13, "Open dialog");
 	if (m_button4 == NULL)
 		return FALSE;
 
 	m_button4->set_accelerator('P');
 	m_window->add_control(m_button4);
 
-	m_button5 = new uibutton(ID_BUTTON_DLGSAVE, 5, 23, 13, "Save dialog");
+	m_button5 = new uibutton(ID_BUTTON_DLGSAVE, 5, 19, 13, "Save dialog");
 
 	if (m_button5 == NULL)
 		return FALSE;
@@ -72,14 +72,14 @@ bool_t testview::init_controls() {
 	m_button5->set_accelerator('S');
 	m_window->add_control(m_button5);
 
-	m_label = new uilabel(ID_LABEL, 7, 8, "Label text:");
+	m_label = new uilabel(ID_LABEL, 7, 4, "Label text:");
 	if (m_label == NULL)
 		return FALSE;
 
 	m_label->set_accelerator('E');
 	m_window->add_control(m_label);
 
-	m_edit = new uieditbox(ID_EDIT, 7, 20, 26, 64);
+	m_edit = new uieditbox(ID_EDIT, 7, 16, 22, 64);
 	if (m_edit == NULL)
 		return FALSE;
 
@@ -88,7 +88,7 @@ bool_t testview::init_controls() {
 	m_edit->set_accelerator('E');
 	m_window->add_control(m_edit);
 
-	m_list = new uilistbox(ID_LIST, 9, 20, 26, 6);
+	m_list = new uilistbox(ID_LIST, 9, 16, 22, 6);
 	if (m_list == NULL)
 		return FALSE;
 
@@ -101,6 +101,20 @@ bool_t testview::init_controls() {
 	m_window->add_control(m_list);
 	if (populate_ok == FALSE)
 		return FALSE;
+
+	m_text = new uitextbox(ID_TEXT, 3, 42, 32, 8);
+	if (m_text == NULL)
+		return FALSE;
+
+	m_text->set_source("../chglog.md", uitextbox::TEXT);
+	m_window->add_control(m_text);
+
+	m_markdown = new uitextbox(ID_MARKDOWN, 12, 42, 32, 8);
+	if (m_markdown == NULL)
+		return FALSE;
+
+	m_markdown->set_source("../readme.md", uitextbox::MARKDOWN);
+	m_window->add_control(m_markdown);
 
 	return TRUE;
 }

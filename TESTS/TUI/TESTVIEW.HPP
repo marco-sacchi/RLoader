@@ -8,6 +8,7 @@
 #include "tui/label.hpp"
 #include "tui/editbox.hpp"
 #include "tui/listbox.hpp"
+#include "tui/textbox.hpp"
 
 #include "tui/views/opensave.hpp"
 
@@ -31,7 +32,9 @@ private:
 		ID_BUTTON_DLGSAVE,
 		ID_LABEL,
 		ID_EDIT,
-		ID_LIST
+		ID_LIST,
+		ID_TEXT,
+		ID_MARKDOWN
 	};
 
 	uimsgbox *create_messagebox();
@@ -44,6 +47,8 @@ private:
 	uilabel *m_label;
 	uieditbox *m_edit;
 	uilistbox *m_list;
+	uitextbox *m_text;
+	uitextbox *m_markdown;
 	uiopensave *m_opensave;
 	testview *m_dialog;
 };

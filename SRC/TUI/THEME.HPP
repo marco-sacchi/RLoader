@@ -33,6 +33,11 @@ public:
 		static uint8_t back;
 	};
 
+	struct textbox {
+		static uint8_t fore;
+		static uint8_t back;
+	};
+
 	struct window {
 		static uint8_t fore;
 		static uint8_t back;
