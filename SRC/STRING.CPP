@@ -2,6 +2,10 @@
 
 #include "string.hpp"
 
+bool_t string::is_eol(char c) {
+	return (c == '\r' || c == '\n') ? TRUE : FALSE;
+}
+
 bool_t string::is_white_space(char c) {
 	return (c == ' ' || c == '\t') ? TRUE : FALSE;
 }

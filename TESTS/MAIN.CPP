@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <conio.h>
 
-#include "keyb\keytests.hpp"
-#include "vga\vgatests.hpp"
-#include "tui\tuitests.hpp"
+#include "keyb/keytests.hpp"
+#include "critical/critests.hpp"
+#include "vga/vgatests.hpp"
+#include "tui/tuitests.hpp"
+#include "markdown/md_tests.hpp"
 
 #include "string.hpp"
 #include "vga.hpp"
@@ -16,9 +18,12 @@ int main(int argc, const char *argv[]) {
 	} else {
 		printf("Select test to run:\n"
 			   "1 - Keyboard\n"
-			   "2 - VGA\n"
-			   "3 - Text-mode user interface\n"
-			   "4 - Graphics-mode user interface\n");
+			   "2 - Custom critical error handler\n"
+			   "3 - VGA\n"
+			   "4 - Text-mode user interface\n"
+			   "5 - Graphics-mode user interface\n"
+			   "6 - Text-mode markdown\n"
+			   "7 - Graphics-mode markdown\n");
 
 		selection = getch() - '0';
 	}
@@ -34,15 +39,27 @@ int main(int argc, const char *argv[]) {
 			break;
 
 		case 2:
-			result = vga_tests();
+			result = critical_tests();
 			break;
 
 		case 3:
-			result = tui_tests(TRUE);
+			result = vga_tests();
 			break;
 
 		case 4:
+			result = tui_tests(TRUE);
+			break;
+
+		case 5:
 			result = tui_tests(FALSE);
+			break;
+
+		case 6:
+			result = md_tests(TRUE);
+			break;
+
+		case 7:
+			result = md_tests(FALSE);
 			break;
 
 		default:

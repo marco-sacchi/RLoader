@@ -6,6 +6,12 @@
 /** String utilites methods. */
 class string {
 public:
+	/** Test for end of line character.
+	 *
+	 * @param c Character to test.
+	 * @return TRUE if character is \r or \n, FALSE otherwise.
+	 */
+	static bool_t is_eol(char c);
 	/** Test for whitespace character.
 	 *
 	 * @param c Character to test.
