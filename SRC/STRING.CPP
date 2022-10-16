@@ -11,7 +11,8 @@ bool_t string::is_white_space(char c) {
 }
 
 bool_t string::is_punctuation(char c) {
-	return ((c >= 0x21 && c <= 0x40) ||
+	return ((c >= 0x21 && c <= 0x2f) ||
+			(c >= 0x3a && c <= 0x40) ||
 			(c >= 0x5b && c <= 0x60) ||
 			(c >= 0x7b && c <= 0x7e)) ? TRUE : FALSE;
 }

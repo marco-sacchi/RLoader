@@ -8,6 +8,8 @@
 
 bool_t receiver(markdown::token_t *token);
 
+static markdown::indents_t indents;
+
 bool_t md_tests(bool_t text_mode) {
 	if (text_mode == FALSE)
 		vga::set_mode(0x12);
@@ -20,10 +22,15 @@ bool_t md_tests(bool_t text_mode) {
 		return FALSE;
 	}
 
-	markdown *parser = new markdown();
+	indents[markdown::B_PARAGRAPH] = 0;
+	indents[markdown::B_HEADING] = 0;
+	indents[markdown::B_OLIST] = 0;
+	indents[markdown::B_ULIST] = 0;
+	indents[markdown::B_LIST_ITEM] = 4;
+	indents[markdown::B_CODE] = 0;
+
+	markdown *parser = new markdown(40, receiver, indents);
 	parser->set_source("../readme.md");
-	parser->set_width(40);
-	parser->set_token_receiver(receiver);
 
     clrscr();
 
@@ -42,7 +49,13 @@ bool_t md_tests(bool_t text_mode) {
 }
 
 bool_t receiver(markdown::token_t *token) {
+	textbackground(BLACK);
+	textcolor(LIGHTGRAY);
 
+	int x = wherex(), y = wherey();
+	gotoxy(41, y);
+	putch('|');
+	gotoxy(x, y);
 
 	textbackground(token->block);
 	/*
@@ -68,10 +81,13 @@ bool_t receiver(markdown::token_t *token) {
 
 	switch (token->type) {
 		case markdown::T_BLOCK_START:
+			textbackground(BLACK);
+			if (indents[token->block] > 0)
+				cprintf("\r\n%*c", indents[token->block], ' ');
 			break;
 
 		case markdown::T_BLOCK_END:
-	        textbackground(BLACK);
+			textbackground(BLACK);
 			cprintf("\r\n\r\n");
 			break;
 
@@ -89,6 +105,8 @@ bool_t receiver(markdown::token_t *token) {
 		case markdown::T_NEWLINE:
 			textbackground(BLACK);
 			cprintf("\r\n");
+			if (indents[token->block] > 0)
+				cprintf("%*c", indents[token->block], ' ');
 			break;
 	}
 

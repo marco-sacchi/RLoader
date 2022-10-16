@@ -5,11 +5,13 @@
 
 #include "types.hpp"
 
-/** Simple markdown pre-parser.
+class md_token;
+
+/** Simple markdown parser.
  *
  * This pre-parser support a subset of availabile markdown features.
  * Supported syntax:
- * - headings using 1 to 6 hash characters followed by space: # to ######
+ * - ATX headings using 1 to 6 hash characters followed by space: # to ######
  * - paragraphs ending with 2 consecutive eol: \n\n, or between other blocks
  * - ordered lists using number followed by dot: 1.
  * - unordered lists using dashes: -
@@ -28,7 +30,8 @@ public:
 		B_OLIST,
 		B_ULIST,
 		B_LIST_ITEM,
-		B_CODE
+		B_CODE,
+		B_COUNT // Count if block types.
 	};
 
 	enum styles {
@@ -52,15 +55,13 @@ public:
 		char *text;
 	} token_t;
 
+	typedef uint8_t indents_t[B_COUNT];
 	typedef bool_t (*token_receiver_t)(token_t *);
 
-	markdown();
+	markdown(int width, token_receiver_t f, indents_t indents);
 	~markdown();
 
 	bool_t set_source(const char *filename);
-	void set_width(int width);
-
-	void set_token_receiver(token_receiver_t f);
 
 	int get_lines();
 
@@ -82,8 +83,13 @@ private:
 		int level;
 	};
 
+	typedef struct style_delim {
+		styles style;
+		bool_t left;
+	};
+
 	bool_t is_block_delim(delim_info *info);
-	bool_t is_style_delim(char prev, char curr, styles *new_style);
+	bool_t is_style_delim(char prev, char curr, style_delim *info);
 
 	bool_t parse_heading();
 	bool_t parse_olist_block();
@@ -104,6 +110,11 @@ private:
 	void new_style_token(styles style);
 	void new_line_token();
 	void emit_curr_token();
+	void reset_token_buffer();
+
+	void swap_tokens();
+
+	indents_t m_indents;
 
 	FILE *m_input;
 	int m_lines;
@@ -117,6 +128,48 @@ private:
 	delim_info m_curr_delim;
 	block_type m_curr_block;
 	styles m_curr_style;
+
+	md_token *m_token;
+};
+
+class md_token {
+public:
+	md_token(int buffer_size, markdown::token_receiver_t f);
+	~md_token();
+
+	void reset();
+	void set_block(markdown::block_type block);
+	void set_indent(int indent);
+	void new_style(markdown::styles style);
+	void new_line();
+
+	void emit_tokens();
+
+	int len();
+	int width();
+
+	bool_t write_char(char ch);
+	bool_t unwrite_chars(int num_chars);
+
+private:
+	typedef struct {
+		markdown::styles style;
+		int offset;
+	} style_change_t;
+
+	int m_buffer_size;
+	markdown::token_receiver_t m_token_receiver;
+
+	markdown::block_type m_block;
+
+	char *m_text;
+	char *m_ptr;
+	char *m_ws_ptr;
+
+	style_change_t *m_styles;
+	int m_styles_count;
+
+	int m_indent;
 };
 
 #endif

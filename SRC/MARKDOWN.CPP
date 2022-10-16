@@ -1,27 +1,20 @@
 #include <mem.h>
 #include <string.h>
 
+#include "math.hpp"
 #include "markdown.hpp"
 #include "string.hpp"
 
 /* TODO
  *
  * emettere:
- * - un token di tipo T_NEWLINE ogni volta che si supera il numero
- *   massimo di caratteri per linea m_width ad eccezione dei blocchi B_CODE
- *
- * - troncare le linee dei blocchi di codice a m_width (no wordwrap)
- * - aggiungere configurazione del rientro per i tipi di blocchi in modo
- *   da calcolare correttamente la lunghezza delle righe (es. liste) e
- *   relativa emissione di T_NEWLINE
- * - valutare se usare parse_text anche sugli heading ignorando la gestione
- *   delle le serie di # di chiusura, diventeranno testo visibile.
- * - gestire correttamente il wordwrap evitando di spezzare parole e
- *   tralasciando i whitespace quando sono a inizio/fine riga.
+ * - rimuovere vecchio codice su parse_heading dopo aver rimosso lo spazio
+ *   in eccesso a fine testo che resta da parse_text.
+ * - verificare le occorrenze di m_curr_* e rimuovere quelle ormai superflue.
  */
 
 /*
- * - headings using 1 to 6 hash characters followed by space: # to ######
+ * - ATX headings using 1 to 6 hash characters followed by space: # to ######
  * - paragraphs ending with 2 consecutive eol: \n\n, or between other blocks
  * - ordered lists using number followed by dot: 1.
  * - unordered lists using dashes: -
@@ -32,27 +25,38 @@
  * - code/keys spans using backtick: `
  */
 
-markdown::markdown() {
+markdown::markdown(int width, token_receiver_t f, indents_t indents) {
+	memcpy(m_indents, indents, sizeof(indents_t));
+
+	m_width = width;
 	m_input = NULL;
-	m_lines = m_width = 0;
+	m_lines = 0;
 
 	m_curr_block = markdown::B_PARAGRAPH;
 	m_curr_style = markdown::S_NONE;
 	m_curr_line_len = 0;
 
-	m_token_receiver = NULL;
+	m_token_receiver = f;
 	memset(&m_curr_token, 0x00, sizeof(token_t));
 	m_curr_token.type = T_BLOCK_START;
 	m_curr_token.block = B_HEADING;
 
-	m_curr_token_ptr = NULL;
+	// +2 is needed to correctly handle white-space collapsing
+	// on parse_text.
+	m_curr_token.text = new char[m_width + 2];
+	memset(m_curr_token.text, 0x00, m_width + 2);
+	m_curr_token_ptr = m_curr_token.text;
 
 	memset(&m_curr_delim, 0x00, sizeof(m_curr_delim));
+	m_token = new md_token(40, f);
 }
 
 markdown::~markdown() {
 	if (m_input != NULL)
 		fclose(m_input);
+
+	delete m_curr_token.text;
+	delete m_token;
 }
 
 bool_t markdown::set_source(const char *filename) {
@@ -66,21 +70,6 @@ bool_t markdown::set_source(const char *filename) {
 	}
 
 	return TRUE;
-}
-
-void markdown::set_width(int width) {
-	m_width = width;
-
-	if (m_curr_token.text != NULL)
-		delete m_curr_token.text;
-
-	m_curr_token.text = new char[m_width + 1];
-	memset(m_curr_token.text, 0x00, m_width + 1);
-	m_curr_token_ptr = m_curr_token.text;
-}
-
-void markdown::set_token_receiver(token_receiver_t f) {
-	m_token_receiver = f;
 }
 
 int markdown::get_lines() {
@@ -284,13 +273,12 @@ bool_t markdown::is_block_delim(markdown::delim_info *info) {
 	return TRUE;
 }
 
-bool_t markdown::is_style_delim(char prev, char curr, styles *new_style) {
+bool_t markdown::is_style_delim(char prev, char curr, style_delim *info) {
 	if (curr != '*' && curr != '`')
 		return FALSE;
 
-	int read_count = 0;
 	char ch, delim = curr;
-	int run = 1;
+	int read_count = 0, run = 1;
 	bool_t ok;
 	while ((ok = this->read_char(&ch, &read_count)) == TRUE && ch == delim)
 		++run;
@@ -298,7 +286,8 @@ bool_t markdown::is_style_delim(char prev, char curr, styles *new_style) {
 	char next = ' ';
 	if (ok == TRUE) {
 		this->unread_chars(1, &read_count);
-		next = ch;
+		if (string::is_eol(ch) == FALSE)
+			next = ch;
 	}
 
 	bool_t left = !string::is_white_space(next) &&
@@ -318,24 +307,25 @@ bool_t markdown::is_style_delim(char prev, char curr, styles *new_style) {
 		return FALSE;
 	}
 
-	*new_style = m_curr_token.style;
+	info->style = m_curr_token.style;
+	info->left = left;
 
 	if (delim == '`') {
 		if (left == TRUE)
-			*new_style = *new_style | S_CODE;
+			info->style = info->style | S_CODE;
 		else if (right == TRUE)
-			*new_style = *new_style & ~S_CODE;
+			info->style = info->style & ~S_CODE;
 	} else {
 		if (left == TRUE) {
 			if (run & 0x01)
-				*new_style = *new_style | S_EMPHASIS;
+				info->style = info->style | S_EMPHASIS;
 			if (run & 0x02)
-				*new_style = *new_style | S_STRONG;
+				info->style = info->style | S_STRONG;
 		} else if (right == TRUE) {
 			if (run & 0x01)
-				*new_style = *new_style & ~S_EMPHASIS;
+				info->style = info->style & ~S_EMPHASIS;
 			if (run & 0x02)
-				*new_style = *new_style & ~S_STRONG;
+				info->style = info->style & ~S_STRONG;
 		}
 	}
 
@@ -343,6 +333,21 @@ bool_t markdown::is_style_delim(char prev, char curr, styles *new_style) {
 }
 
 bool_t markdown::parse_heading() {
+	this->new_block_token(B_HEADING);
+	this->emit_curr_token();
+
+	bool_t ok = this->parse_text();
+
+	if (feof(m_input))
+		ok = TRUE;
+
+	if (ok == TRUE) {
+		this->new_block_end_token(B_HEADING);
+		this->emit_curr_token();
+	}
+
+	return ok;
+/*
 	int read_count = 0;
 	char ch;
 	bool_t ok;
@@ -412,6 +417,7 @@ bool_t markdown::parse_heading() {
 	}
 
 	return ok;
+*/
 }
 
 bool_t markdown::parse_olist_block() {
@@ -434,15 +440,14 @@ bool_t markdown::parse_ulist_block() {
 		if (ok == FALSE)
 			break;
 
+		this->new_block_end_token(B_LIST_ITEM);
+
 		delim_info delim;
 		ok = this->is_block_delim(&delim);
 		if (ok == FALSE || delim.type != ULIST_DELIM) {
 			this->unread_chars(delim.size, &read_count);
 			break;
 		}
-
-		this->new_line_token();
-		this->emit_curr_token();
 	}
 
 	if (feof(m_input))
@@ -466,6 +471,7 @@ bool_t markdown::parse_code_block() {
 
 	this->new_style_token(S_NONE);
 
+	int line_len = 0;
 	while ((ok = this->read_char(&ch, &read_count)) == TRUE) {
 		if (ch == '\n') {
 			delim_info delim;
@@ -482,25 +488,40 @@ bool_t markdown::parse_code_block() {
 				break;
 			}
 
-			if (delim.type != CODE_DELIM) {
+			if (m_curr_delim.ch == ' ' && delim.type != CODE_DELIM) {
 				this->unread_chars(delim.size, &read_count);
 				break;
 			}
 
 			// Ignore code delimiters using spaces inside a fenced
 			// code block to proper retain code indendation.
-			this->unread_chars(delim.size, &read_count);
+			if (m_curr_delim.ch != ' ')
+				this->unread_chars(delim.size, &read_count);
+
+			this->emit_curr_token();
+
+			this->new_line_token();
+			this->emit_curr_token();
+
+			this->new_style_token(S_NONE);
+			line_len = 0;
+			continue;
 		}
 
 		if (ch == '\t') {
 			// Expand tabs to 4 spaces.
-			for (int i = 0; i < 4 && ok == TRUE; ++i)
-				ok = this->write_char(' ');
+			for (int i = 0; i < 4 && ok == TRUE; ++i) {
+				if (line_len < m_width)
+					ok = this->write_char(' ');
+				++line_len;
+			}
 
 			if (ok == FALSE)
 				break;
-		} else
+		} else if (line_len < m_width) {
 			ok = this->write_char(ch);
+			++line_len;
+		}
 	}
 
 	if (feof(m_input))
@@ -535,11 +556,15 @@ bool_t markdown::parse_paragraph() {
 
 bool_t markdown::parse_text() {
 	int read_count = 0;
-	bool_t ok = TRUE, last_written_is_ws = FALSE;
+	bool_t ok = TRUE;
 	char ch;
-	styles style;
 
-	this->new_style_token(S_NONE);
+	style_delim sdelim;
+
+	m_token->set_block(m_curr_token.block);
+	m_token->set_indent(m_indents[m_curr_token.block]);
+	m_token->reset();
+	m_token->new_style(S_NONE);
 
 	char previous = ' ';
 	while ((ok = this->read_char(&ch, &read_count)) == TRUE) {
@@ -561,36 +586,122 @@ bool_t markdown::parse_text() {
 			// Collapse multiple white-spaces.
 			if (string::is_white_space(previous) == FALSE &&
 				string::is_eol(previous) == FALSE) {
-				this->write_char(' ');
-				if (++m_curr_line_len == m_width) {
-					this->emit_curr_token();
-
-					this->new_line_token();
-					this->emit_curr_token();
-
-					this->new_style_token(m_curr_token.style);
-					previous = ' ';
-				}
-				last_written_is_ws = TRUE;
+				m_token->write_char(' ');
 			}
-		} else if (this->is_style_delim(previous, ch, &style)) {
-			// Inline style.
+		} else if (this->is_style_delim(previous, ch, &sdelim)) {
+			m_token->new_style(sdelim.style);
+		} else {
+			m_token->write_char(ch);
+		}
+
+		if (m_token->width() > m_width)
+			m_token->new_line();
+
+		previous = ch;
+	}
+
+	if (feof(m_input))
+		ok = TRUE;
+
+	if (ok == TRUE)
+		m_token->emit_tokens();
+
+	return ok;
+}
+
+/* Versione a un token, non del tutto funzionante.
+bool_t markdown::parse_text() {
+	int read_count = 0;
+	bool_t ok = TRUE, prev_is_ws = FALSE;
+	char ch;
+
+	style_delim sdelim;
+	bool_t style_pending = FALSE;
+
+	this->new_style_token(S_NONE);
+
+	char previous = ' ';
+	int prev_ws_read_count = -1;
+	char *prev_ws_ptr = NULL;
+	styles prev_ws_style = S_NONE;
+	while ((ok = this->read_char(&ch, &read_count)) == TRUE) {
+		if (ch == '\n') {
+			if (previous == ch)
+				break;
+
+			delim_info delim;
+			if ((ok = this->is_block_delim(&delim)) == TRUE) {
+				if (delim.type != PARAGRAPH_DELIM) {
+					this->unread_chars(delim.size, &read_count);
+					break;
+				}
+			}
+		}
+
+		if (string::is_white_space(ch) == TRUE ||
+			string::is_eol(ch) == TRUE) {
+			// Collapse multiple white-spaces.
+			if (string::is_white_space(previous) == FALSE &&
+				string::is_eol(previous) == FALSE) {
+				prev_is_ws = TRUE;
+			}
+			prev_ws_read_count = read_count;
+			prev_ws_style = m_curr_token.style;
+		} else if (this->is_style_delim(previous, ch, &sdelim)) {
+			style_pending = sdelim.left;
+			if (sdelim.left == FALSE) {
+				// Closing inline style delimiter.
+				this->emit_curr_token();
+				this->new_style_token(sdelim.style);
+			}
+		} else {
+			if (prev_is_ws == TRUE) {
+				prev_ws_ptr = m_curr_token_ptr;
+				this->write_char(' ');
+				++m_curr_line_len;
+				prev_is_ws = FALSE;
+			}
+
+			if (style_pending == TRUE) {
+				// Opening inline style delimiter.
+				this->emit_curr_token();
+				this->new_style_token(sdelim.style);
+				prev_ws_ptr = NULL;
+				style_pending = FALSE;
+			}
+
+			this->write_char(ch);
+			++m_curr_line_len;
+		}
+
+		if (m_curr_line_len > m_width) {
+			uint16_t unread_count;
+			if (prev_ws_read_count >= 0) {
+				unread_count = read_count - prev_ws_read_count;
+				if (prev_ws_ptr != NULL)
+					m_curr_token_ptr = prev_ws_ptr;
+				else
+					m_curr_token_ptr = m_curr_token.text;
+
+				*m_curr_token_ptr = '\0';
+			} else {
+				unread_count = m_curr_line_len - m_width;
+				*(m_curr_token.text + m_width) = '\0';
+			}
+
+			this->unread_chars(unread_count, &read_count);
+
+			if (m_curr_token_ptr > m_curr_token.text)
+				this->emit_curr_token();
+
+			this->new_line_token();
 			this->emit_curr_token();
 
-			this->new_style_token(style);
-		} else {
-			last_written_is_ws = FALSE;
-			this->write_char(ch);
-
-			if (++m_curr_line_len == m_width) {
-				this->emit_curr_token();
-
-				this->new_line_token();
-				this->emit_curr_token();
-
-				this->new_style_token(m_curr_token.style);
-				previous = ' ';
-			}
+			this->new_style_token(prev_ws_style);
+			ch = ' ';
+			prev_is_ws = FALSE;
+			prev_ws_ptr = NULL;
+			prev_ws_read_count = -1;
 		}
 
 		previous = ch;
@@ -599,15 +710,12 @@ bool_t markdown::parse_text() {
 	if (feof(m_input))
 		ok = TRUE;
 
-	if (ok == TRUE) {
-		if (last_written_is_ws == TRUE)
-			this->unwrite_chars(1);
-
+	if (ok == TRUE)
 		this->emit_curr_token();
-	}
 
 	return ok;
 }
+*/
 
 bool_t markdown::read_char(char *ch, int *count) {
 	int c = fgetc(m_input);
@@ -633,6 +741,9 @@ bool_t markdown::read_char(char *ch, int *count) {
 bool_t markdown::unread_chars(int num_chars, int *count) {
 	if ((*count - num_chars) < 0)
 		return FALSE;
+
+	if (num_chars == 0)
+		return TRUE;
 
 	if (fseek(m_input, -num_chars, SEEK_CUR) == 0) {
 		*count -= num_chars;
@@ -663,41 +774,29 @@ void markdown::new_block_token(markdown::block_type block) {
 	m_curr_token.block = block;
 	m_curr_token.style = S_NONE;
 
-	if (m_curr_token.text != NULL) {
-		memset(m_curr_token.text, 0x00, m_width + 1);
-		m_curr_token_ptr = m_curr_token.text;
-	}
+	this->reset_token_buffer();
 
-	m_curr_line_len = 0;
+	m_curr_line_len = m_indents[block];
 }
 
 void markdown::new_block_end_token(markdown::block_type block) {
 	m_curr_token.type = T_BLOCK_END;
 	m_curr_token.block = block;
 
-	if (m_curr_token.text != NULL) {
-		memset(m_curr_token.text, 0x00, m_width + 1);
-		m_curr_token_ptr = m_curr_token.text;
-	}
+	this->reset_token_buffer();
 }
 
 void markdown::new_style_token(markdown::styles style) {
 	m_curr_token.type = T_SPAN;
 	m_curr_token.style = style;
 
-	if (m_curr_token.text != NULL) {
-		memset(m_curr_token.text, 0x00, m_width + 1);
-		m_curr_token_ptr = m_curr_token.text;
-	}
+	this->reset_token_buffer();
 }
 
 void markdown::new_line_token() {
-	if (m_curr_token.text != NULL) {
-		memset(m_curr_token.text, 0x00, m_width + 1);
-		m_curr_token_ptr = m_curr_token.text;
-	}
+	this->reset_token_buffer();
 
-	m_curr_line_len = 0;
+	m_curr_line_len = m_indents[m_curr_token.block];
 	m_curr_token.type = T_NEWLINE;
 }
 
@@ -705,3 +804,175 @@ void markdown::emit_curr_token() {
 	if (m_token_receiver != NULL)
 		m_token_receiver(&m_curr_token);
 }
+
+void markdown::reset_token_buffer() {
+	if (m_curr_token.text == NULL)
+		return;
+
+	memset(m_curr_token.text, 0x00, m_width + 2);
+	m_curr_token_ptr = m_curr_token.text;
+}
+
+/******************/
+
+md_token::md_token(int buffer_size, markdown::token_receiver_t f) {
+	m_buffer_size = buffer_size;
+	m_token_receiver = f;
+	// +2 is needed to correctly handle white-space collapsing
+	// on parse_text.
+	m_text = new char[buffer_size + 2];
+	m_styles = new style_change_t[buffer_size];
+	this->reset();
+	m_indent = 0;
+}
+
+md_token::~md_token() {
+	delete m_text;
+	delete m_styles;
+}
+
+void md_token::reset() {
+	m_styles_count = 0;
+	m_ptr = m_text;
+	*m_ptr = '\0';
+	m_ws_ptr = NULL;
+}
+
+void md_token::set_block(markdown::block_type block) {
+	m_block = block;
+}
+
+void md_token::set_indent(int indent) {
+	m_indent = indent;
+}
+
+void md_token::new_style(markdown::styles style) {
+	int offset = (int)(m_ptr - m_text);
+	// Check if style change is requested multiple
+	// times without writing characters, updating current.
+	if (m_styles_count > 0) {
+		int i = m_styles_count - 1;
+		if (m_styles[i].offset == offset) {
+			m_styles[i].style = style;
+			return;
+		}
+	}
+
+	m_styles[m_styles_count].style = style;
+	m_styles[m_styles_count].offset = offset;
+	++m_styles_count;
+}
+
+void md_token::new_line() {
+	int unwrite_count;
+	if (m_ws_ptr != NULL)
+		unwrite_count = (int)(m_ptr - (m_ws_ptr + 1));
+	else
+		unwrite_count = (int)(m_ptr - (m_text + m_buffer_size));
+
+	m_ptr -= unwrite_count;
+	char ch = *m_ptr;
+	*m_ptr = '\0';
+
+	if (m_ws_ptr != NULL)
+		*(m_ptr - 1) = '\0';
+
+	// Emit tokens up to the new line.
+	this->emit_tokens();
+
+	// Emit new line token.
+	if (m_token_receiver != NULL) {
+		markdown::token_t token;
+		token.block = m_block;
+		token.type = markdown::T_NEWLINE;
+		token.text = NULL;
+		m_token_receiver(&token);
+	}
+
+	// It deletes text of emitted tokens and styles
+	// changes preceding the new line from buffer.
+
+	*m_ptr = ch;
+
+	int styles_delta = (int)(m_ptr - m_text);
+	memmove(m_text, m_ptr, unwrite_count);
+	m_ptr = m_text + unwrite_count;
+	*m_ptr = '\0';
+
+	int j = 0;
+	for (int i = 0; i < m_styles_count; ++i) {
+		if ((i < (m_styles_count - 1)) &&
+			((m_styles[i + 1].offset - styles_delta) < 0))
+			continue;
+
+		m_styles[j].style = m_styles[i].style;
+		m_styles[j].offset = max(0, m_styles[i].offset - styles_delta);
+		++j;
+	}
+
+	m_styles_count = j;
+}
+
+void md_token::emit_tokens() {
+	markdown::token_t token;
+	token.block = m_block;
+	token.type = markdown::T_SPAN;
+
+	style_change_t *style = m_styles,
+		*last_style = &m_styles[m_styles_count - 1];
+
+	char *ptr = m_text, *last = m_ptr, *end;
+	char ch;
+	while (ptr < last) {
+		end = last;
+		if (style < last_style)
+			end = m_text + (style + 1)->offset;
+
+		ch = *end;
+		*end = '\0';
+
+		if (m_token_receiver != NULL) {
+			token.style = style->style;
+			token.text = ptr;
+			m_token_receiver(&token);
+		}
+
+		*end = ch;
+		ptr = end;
+		++style;
+	}
+}
+
+int md_token::len() {
+	return (int)(m_ptr - m_text);
+}
+
+int md_token::width() {
+	return this->len() + m_indent;
+}
+
+bool_t md_token::write_char(char ch) {
+	if (ch == ' ')
+		m_ws_ptr = m_ptr;
+
+	*m_ptr++ = ch;
+	return TRUE;
+}
+
+bool_t md_token::unwrite_chars(int num_chars) {
+	char *newptr = m_ptr - num_chars;
+
+	if (newptr < m_text)
+		return FALSE;
+
+	m_ptr = newptr;
+	*m_ptr = '\0';
+
+	while (m_styles_count > 0 &&
+		m_styles[m_styles_count - 1].offset > this->len())
+		--m_styles_count;
+
+	return TRUE;
+}
+
+
