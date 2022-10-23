@@ -64,8 +64,13 @@ int list::count_entries(FILE *fp) {
 		return -1;
 
 	fseek(fp, 0, SEEK_SET);
+	char *newline = NULL;
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, fp) != NULL) {
-		line_buffer[LINE_BUFFER_SIZE - 1] = NULL;
+		line_buffer[LINE_BUFFER_SIZE - 1] = '\0';
+		newline = strchr(line_buffer, '\n');
+		if (newline != NULL)
+			*newline = '\0';
+
 		if (line_buffer[0] == '#' || string::is_empty(line_buffer))
 			continue;
 
@@ -84,8 +89,13 @@ bool_t list::read_entries(FILE *fp) {
 		return FALSE;
 
 	fseek(fp, 0, SEEK_SET);
+	char *newline = NULL;
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, fp) != NULL) {
 		line_buffer[LINE_BUFFER_SIZE - 1] = NULL;
+		newline = strchr(line_buffer, '\n');
+		if (newline != NULL)
+			*newline = '\0';
+
 		if (line_buffer[0] == '#' || string::is_empty(line_buffer))
 			continue;
 
