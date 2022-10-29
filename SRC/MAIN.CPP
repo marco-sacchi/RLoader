@@ -15,7 +15,7 @@
 #include "ui.hpp"
 #include "string.hpp"
 
-#define VERSION		"1.0.2"
+#define VERSION		"1.0.3"
 
 /** Batch creation modes. */
 enum batch_mode {
