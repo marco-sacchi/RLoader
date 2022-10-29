@@ -30,17 +30,36 @@ start:
 
 	mov		ds, ax
 
-	call	_init_interpreter
+	lea		si, comspec					; Check if COMSPEC environment
+	lea		di, interpreter				; variable is defined and copy it to
+	call	_get_env_var                ; the interpreter string.
 	cmp		ax, 1
 	je		main_comspec_found
 
-	lea		dx, err_comspec				; Display error message when
-	call	_print_line					; COMSPEC environemnt variabile
-										; is not defined.
+	lea		dx, err_comspec				; Display error message for undefined
+	call	_print_line					; COMSPEC environment variable.
+
 	mov		al, 1
 	call	_exit
 
 main_comspec_found:
+	lea		si, rloader_path			; Check if RLOADER_PATH environment
+	lea		di, path_buffer				; variable is defined, and change
+	call	_get_env_var				; current working dir accordingly.
+	cmp		ax, 1
+	jne		main_rloader_env_done
+
+	mov		dx, di
+	call	_set_curr_dir
+	jnc		main_rloader_env_done
+
+	lea		dx, err_rloader_env			; Display error message for invalid
+	call	_print_line					; path in RLOADER_PATH environment
+										; variable.
+	mov		al, 1
+	call	_exit
+
+main_rloader_env_done:
 	lea		bx, param_block
 	mov		word ptr [bx + 4], ds		; Set segments of param_block to ds.
 	mov		word ptr [bx + 8], ds
@@ -100,7 +119,7 @@ main_batch_launch_ok:
 	lea		bx, first_run				; Check if first_run flag must
 	cmp		byte ptr [bx], 0			; be cleared.
 	je		main_loop					; If already cleared loop.
-	
+
 	mov		byte ptr [bx], 0			; Clear the flag.
 
 	cld
@@ -138,22 +157,23 @@ main_args_end_search:					; is found.
 	xor		al, al
 	call	_exit
 
-; Initialize interpreter string searching for COMSPEC environmental variable.
+; Get value of an environment variable, if set.
 ;
+; on entry:
+; ds:si		variable name to search for.
+; es:di		buffer to receive variable value.
 ; returns:
-; ax		1 if COMSPEC is found, 0 otherwise.
-_init_interpreter proc near
+; ax		1 if variable exist, 0 otherwise.
+_get_env_var proc near
 	push	bx
 	push	si
+	push	ds
 	push	di
 	push	es
-	push	ds
 
 	mov		bx, word ptr [envblock_seg]	; Put environment block segment in es.
 	mov		es, bx
 	xor		di, di
-
-	lea		si, comspec
 
 @@search_loop:
 	call	_str_search
@@ -164,29 +184,42 @@ _init_interpreter proc near
 	xor		ax, ax
 	cmp		byte ptr [es:di], al
 	je		@@not_found
-	
+
 	jmp		@@search_loop
 
 @@found:
-	add		di, comspec_len
-	lea		si, interpreter
-	xchg	di, si
+	cld
 
-	mov		ax, ds
-	mov		es, ax
-	mov		ds, bx
+@@skip_loop:                            ; Advance di to it move to the
+	lodsb								; variable value start character.
+	cmp		al, 0
+	je		@@skip_done
+	inc		di
+	jmp		@@skip_loop
+
+@@skip_done:
+	mov     si, es
+	mov		ds, si
+	mov		si, di
+
+	pop		es
+	pop		di
 
 	call	_str_copy
 	mov		ax, 1
-	
+	jmp		@@exit
+
 @@not_found:
 	pop		es
-	pop		ds
 	pop		di
+	xor		ax, ax
+
+@@exit:
+	pop		ds
 	pop		si
 	pop		bx
 	ret
-_init_interpreter endp
+_get_env_var endp
 
 ; Delete temporary files that may be left on disk.
 ;
@@ -194,7 +227,7 @@ _delete_temp_files proc near
 	push	ax
 	push	dx
 	push	si
-	
+
 	lea 	dx, temp_batch
 	call	_file_exists
 
@@ -210,7 +243,7 @@ _delete_temp_files proc near
 
 	cmp		al, 0
 	je		@@files_no_cycles
-	
+
 	mov		si, dx
 	call	_file_unlink
 
@@ -227,7 +260,7 @@ _delete_temp_files endp
 ; al		return code
 _exit proc near
 	push	ax
-	
+
 	mov		ah, 4ch
 	int 	DOS_INT
 
@@ -244,7 +277,7 @@ _print_line proc near
 
 	mov		ah, 09h
 	int 	DOS_INT
-	
+
 	pop		ax
 	ret
 _print_line endp
@@ -257,12 +290,12 @@ _get_curr_drive proc near
 	push	bp
 	mov		bp, sp
 	push	ax
-	
+
 	mov		ah, 19h
 	int 	DOS_INT
 
-	mov 	byte ptr [bp - 2], al		; copy al to pushed ax on the stack
-										; to preserve ah
+	mov 	byte ptr [bp - 2], al		; Copy al to pushed ax on the stack
+										; to preserve ah.
 	pop		ax
 	pop		bp
 	ret
@@ -275,7 +308,7 @@ _get_curr_drive endp
 _get_curr_dir proc near
 	push	ax
 	push	dx
-	
+
 	mov		ah, 47h
 	mov		dl, 0
 	int 	DOS_INT
@@ -284,6 +317,44 @@ _get_curr_dir proc near
 	pop		ax
 	ret
 _get_curr_dir endp
+
+; Set current directory.
+;
+; on entry:
+; ds:dx		buffer that contains path to set.
+;
+; carry flag set on error.
+_set_curr_dir proc near
+	push	ax
+
+	push	si							; Load first two characters in ax.
+	mov		si, dx
+	lodsw
+	pop		si
+
+	cmp		ah, ':'						; Check if path contains also drive
+	jne		@@no_drive					; letter.
+
+	push	dx							; Normalize drive letter to uppercase.
+	mov		dl, al
+	cmp		dl, 'Z'
+	jbe		@@uppercase
+	sub		dl, 'a' - 'A'
+
+@@uppercase:
+	sub		dl, 'A'
+
+	mov     ah, 0Eh						; Change drive.
+	int		DOS_INT
+	pop		dx
+
+@@no_drive:
+	mov		ah, 3Bh						; Change directory.
+	int 	DOS_INT
+
+	pop		ax
+	ret
+_set_curr_dir endp
 
 ; Build fullpath prepending current drive and working dir to given filename.
 ;
@@ -493,7 +564,7 @@ _cmd_tail_copy proc near
 	push	di
 
 	cld
-	
+
 	lodsb
 	stosb
 
@@ -595,7 +666,7 @@ _str_append_char endp
 ; es:di		string in which search
 ; returns:
 ; ax		di index at which search string starts if CF is reset,
-;			es:di index at which the scan has arrived if CF is set.
+;			di index at which the scan has arrived if CF is set.
 _str_search proc near
 	push	bx
 	push	si
@@ -618,10 +689,10 @@ _str_search proc near
 	je		@@match_loop
 
 	cmp		al, 0						; Check if the string to search for
-	je		@@found			; is terminated; string is found.
+	je		@@found						; is terminated, string is found.
 
 	cmp		byte ptr [es:di - 1], 0		; Check if the string into which
-	je		@@not_found		; search is terminated.
+	je		@@not_found					; search is terminated.
 
 	sub		si, bx						; Move back DI to the next character
 	sub		di, si						; from which the comparison began.
@@ -659,12 +730,13 @@ stack_end:
 	path_buffer		db	128 dup (?)
 
 	comspec			db	'COMSPEC=', 0
-	comspec_len		equ	$ - comspec - 1
 	interpreter		db	'C:\COMMAND.COM', (32 - ($ - interpreter)) dup (0)
+	rloader_path	db	'RLOADER_PATH=', 0
 	ui				db	'UI.EXE', 0
 	temp_batch		db	'RLOADRUN.BAT', 0
 	temp_cycles		db	'CYCLES.$$$', 0
 	err_comspec		db	'COMSPEC environment variable not set.', CR, LF, '$'
+	err_rloader_env	db	'Invalid path in RLOADER_PATH environment variable.', CR, LF, '$'
 	err_run_ui		db	'Error running: ui.exe', CR, LF, '$'
 	err_run_batch	db	'Error running: rloadrun.bat', CR, LF, '$'
 

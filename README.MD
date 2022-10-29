@@ -69,10 +69,34 @@ If you want to use the text-mode interface, type:
 RLOADER /textmode example
 ```
 
+## Running from any location
+
+`RLOADER.EXE` is designed to search for `UI.EXE` in the current working
+directory, creating some problems in some particular execution scenarios,
+like:
+
+```
+E:\UTILS\RLOADER.EXE example
+```
+
+Since version 1.0.3 it is possible to define the environment variable
+`RLOADER_PATH` to specify the path of rloader, so that it can be executed from
+any location.
+
+The variable can contain the drive designator, it is treated in a 
+case-insensitive way and **must not end** with the directory separator
+character (`\` or `/`). Example of valid paths:
+
+```
+set RLOADER_PATH=D:\UTILITIES\RLOADER
+set RLOADER_PATH=c:\rloader
+```
+
 # Loading RLoader in upper memory
 
-As pointed out by @cyberluke the resident part of RLoader occupies an entire
-segment (64Kb) even if the executable is smaller in size.
+As pointed out by [cyberluke](https://github.com/cyberluke) the resident part
+of RLoader occupies an entire segment (64Kb) even if the executable is smaller
+in size.
 
 Now that it has been rewritten in assembly, a TSR-like behavior has been
 implemented whereby all unused memory paragraphs are released immediately
@@ -174,8 +198,7 @@ format and size of title screen-shots.
 
 This directory will contains optional simplified markdown files what will
 describe specific program usage, options, keyboard shortcuts or notes,
-with a **maximum line length of 38** **characters**, markdown formatting
-excluded.
+with a **maximum line length of 38 characters**, markdown formatting excluded.
 
 
 **NOTE:** titles, in-programs and info filenames *must match the inner*
