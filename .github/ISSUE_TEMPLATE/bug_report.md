@@ -23,6 +23,7 @@ A clear and concise description of what you expected to happen.
 If applicable, add screenshots to help explain your problem.
 
 **Environment**
+- RLoader version: [v1.0.0, v1.0.3, ...]
 - Running on: [DOSBox, Virtual machine, Real hardware]
 - OS: [MS-DOS, FreeDOS, ...]
 
