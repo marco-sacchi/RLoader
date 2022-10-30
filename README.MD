@@ -46,6 +46,14 @@ interfaces: one graphical and one in text mode.
 The former requires a compatible VGA graphics card while the latter makes it
 usable even on low-end machines with a compatible CGA graphics card.
 
+Thanks to [jsmolina](https://github.com/jsmolina) for pointing out a
+compatibility issue in some emulators when text mode is used on CGA graphics
+cards and to [mills32](https://github.com/mills32) for testing on
+[pcem](https://pcem-emulator.co.uk) and [dosbox-x](https://dosbox-x.com).
+
+Now RLoader works correctly even on CGA mono and composite, tandy, pcjr,
+amstrad, mcga, mda machines.
+
 # Execution
 
 You can run RLoader without arguments or with `/h` or `/?` to view a short
