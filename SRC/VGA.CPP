@@ -61,6 +61,12 @@ void vga::read_state(vga::state_t *state) {
 	}
 
 	state->rows = *((uint8_t far *)0x00400084L) + 1;
+	// Invalid value, fallback to documented standard video modes.
+	if (state->rows < 25 || state->rows > 50) {
+		state->rows = 25;
+		if (state->mode == 0x11 || state->mode == 0x12)
+			state->rows = 30;
+	}
 
 	switch (state->mode) {
 		case 0x04:
