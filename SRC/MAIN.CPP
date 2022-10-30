@@ -15,7 +15,7 @@
 #include "ui.hpp"
 #include "string.hpp"
 
-#define VERSION		"1.0.3"
+#define VERSION		"1.0.4"
 
 /** Batch creation modes. */
 enum batch_mode {
@@ -626,7 +626,7 @@ void parse_args(int argc, const char *argv[], const char **list_name) {
 
 void print_usage() {
 	printf(
-		"RLOADER Version " VERSION "\n2021 Marco Sacchi\n\n"
+		"RLOADER Version " VERSION "\n2021-2022 Marco Sacchi\n\n"
 		"Syntax: RLOADER [/?|/h|/dosbox|/batchpause|/batchmemfree] [list_name]\n\n"
 		"/?, /h         Display this help.\n"
 		"/dosbox        Can be specified when this program run on DOSBox\n"
