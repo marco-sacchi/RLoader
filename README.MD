@@ -190,17 +190,36 @@ emulation speed. If zero is specified 'auto' emulation speed will be set.
 The **program title** will be read until end-of-line character or
 end-of-file, so it can contains any character.
 
+### Thumbnails generation
+
+rloader thumbnails must be standard *4 bits-per-pixel uncompressed Windows*
+*bitmap*. Only first **14 colors** can be used, 2 colors are reserved by the
+user interface of this program. Width of the image *must be 320 pixels*.
+
+You can use any command line tool that supports image manipulation. For 
+example using [ImageMagick](https://imagemagick.org/), which is a free and
+open source tool, you can write:
+
+```
+magick.exe input.png -resize 320 -depth 4 -colors 14 bmp3:output.bmp
+```
+
+where:
+- `-resize 320` scale down the image to 320 pixels
+- `-depth 4` specify 4-bits per pixels (16 colors)
+- `-colors 14` remap using only 14 colors
+- `bmp3` means Windows uncompressed bitmap
+
+You can avoid bilinear filtering caused by downscaling by adding the
+`-filter` flag with the values ​​`Point` or `NearestNeighbor`.
+
 ### TITLES subdirectory
 
-This directory will contains optional programs titles screen-shots as an
-standard *4 bits-per-pixel uncompressed* *Windows bitmap*. Only first 
-**14 colors** can be used, 2 colors are reserved by the user interface of
-this program. Width of the image *must be 320 pixels*.
+This directory will contains optional programs titles screen-shots thumbnails.
 
 ### IN_PROGS subdirectory
 
-This directory will contains optional in-programs screen-shots with the same
-format and size of title screen-shots.
+This directory will contains optional in-programs screen-shots thumbnails.
 
 ### INFO subdirectory
 
