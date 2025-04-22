@@ -201,14 +201,16 @@ example using [ImageMagick](https://imagemagick.org/), which is a free and
 open source tool, you can write:
 
 ```
-magick.exe input.png -resize 320 -depth 4 -colors 14 bmp3:output.bmp
+magick.exe input.png -resize 320 -dither Ordered -depth 4 -colors 14 -type palette bmp3:output.bmp
 ```
 
 where:
-- `-resize 320` scale down the image to 320 pixels
-- `-depth 4` specify 4-bits per pixels (16 colors)
-- `-colors 14` remap using only 14 colors
-- `bmp3` means Windows uncompressed bitmap
+- `-resize 320` rescales the image to 320 pixels
+- `-dither Ordered` applies ordered dithering (optional)
+- `-depth 4` specifies 4 bits per pixel (16 colors)
+- `-colors 14` remaps using only 14 colors
+- `type color` ensures conversion to a palettized image
+- `bmp3` specifies an uncompressed Windows bitmap
 
 You can avoid bilinear filtering caused by downscaling by adding the
 `-filter` flag with the values ​​`Point` or `NearestNeighbor`.
